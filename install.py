@@ -60,7 +60,7 @@ EXTENSION_CONFIG = """
             # The default is 10.
             #max_count = 10
 
-            The maximum value to monitor.
+            # The maximum value to monitor.
             #max =  REPLACE_ME
 """
 
@@ -83,7 +83,7 @@ class PushoverInstaller(ExtensionInstaller):
             ]
         }
 
-        install_dict['config'] = configobj.ConfigObj(EXTENSION_CONFIG)
+        install_dict['config'] = configobj.ConfigObj(StringIO(EXTENSION_CONFIG))
         install_dict['restful_services'] = 'user.pushover.Pushover'
 
         super().__init__(install_dict)
