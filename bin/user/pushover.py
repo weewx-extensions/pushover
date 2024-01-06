@@ -95,8 +95,6 @@ class Pushover(StdService):
         self.server = service_dict.get('server', 'api.pushover.net:443')
         self.api = service_dict.get('api', '/1/messages.json')
 
-        data_binding = service_dict.get('data_binding', 'wx_binding')
-        self.dbm = self.engine.db_binder.get_manager(data_binding=data_binding)
         self.client_error_log_frequency = to_int(service_dict.get('client_error_log_frequency', 3600))
         self.server_error_wait_period = to_int(service_dict.get('server_error_wait_period', 3600))
 
@@ -107,6 +105,7 @@ class Pushover(StdService):
         for observation in service_dict['observations']:
             self.observations[observation] = {}
             self.observations[observation]['name'] = service_dict['observations'][observation].get('name', observation)
+            self.observations[observation]['weewx_name'] = service_dict['observations'][observation].get('weewx_name', observation)
 
             self.observations[observation]['min'] = {}
             min_value = service_dict['observations'][observation].get('min', None)
@@ -237,7 +236,8 @@ class Pushover(StdService):
         self.server_error_timestamp = 0
 
         msgs = {}
-        for observation, observation_detail in self.observations.items():
+        for obs, observation_detail in self.observations.items():
+            observation = observation_detail['weewx_name']
             title = None
 
             if observation in event.packet and event.packet[observation]:
