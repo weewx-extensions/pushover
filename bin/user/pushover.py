@@ -95,20 +95,22 @@ class Pushover(StdService):
         self.server = service_dict.get('server', 'api.pushover.net:443')
         self.api = service_dict.get('api', '/1/messages.json')
 
-        self.client_error_log_frequency = service_dict.get('client_error_log_frequency', 3600)
-        self.server_error_wait_period = service_dict.get('server_error_wait_period', 3600)
+        data_binding = service_dict.get('data_binding', 'wx_binding')
+        self.dbm = self.engine.db_binder.get_manager(data_binding=data_binding)
+        self.client_error_log_frequency = to_int(service_dict.get('client_error_log_frequency', 3600))
+        self.server_error_wait_period = to_int(service_dict.get('server_error_wait_period', 3600))
 
-        wait_time = service_dict.get('wait_time', 3600)
-        count = service_dict.get('count', 10)
+        wait_time = to_int(service_dict.get('wait_time', 3600))
+        count = to_int(service_dict.get('count', 10))
 
         self.observations = {}
         for observation in service_dict['observations']:
             self.observations[observation] = {}
             self.observations[observation]['name'] = service_dict['observations'][observation].get('name', observation)
 
+            self.observations[observation]['min'] = {}
             min_value = service_dict['observations'][observation].get('min', None)
             if min_value:
-                self.observations[observation]['min'] = {}
                 self.observations[observation]['min']['value'] = to_int(min_value)
                 self.observations[observation]['min']['count'] = to_int(service_dict['observations'][observation].get('min_count', count))
                 self.observations[observation]['min']['wait_time'] = \
@@ -116,9 +118,9 @@ class Pushover(StdService):
                 self.observations[observation]['min']['last_sent_timestamp'] = 0
                 self.observations[observation]['min']['counter'] = 0
 
+            self.observations[observation]['max'] = {}
             max_value = service_dict['observations'][observation].get('max', None)
             if max_value:
-                self.observations[observation]['max'] = {}
                 self.observations[observation]['max']['value'] = to_int(max_value)
                 self.observations[observation]['max']['count'] = to_int(service_dict['observations'][observation].get('max_count', count))
                 self.observations[observation]['max']['wait_time'] = \
@@ -126,9 +128,9 @@ class Pushover(StdService):
                 self.observations[observation]['max']['last_sent_timestamp'] = 0
                 self.observations[observation]['max']['counter'] = 0
 
+            self.observations[observation]['equal'] = {}
             equal_value = service_dict['observations'][observation].get('equal', None)
             if equal_value:
-                self.observations[observation]['equal'] = {}
                 self.observations[observation]['equal']['value'] = to_int(equal_value)
                 self.observations[observation]['equal']['count'] = to_int(service_dict['observations'][observation].get('equal_count', count))
                 self.observations[observation]['equal']['wait_time'] = \
@@ -141,6 +143,8 @@ class Pushover(StdService):
         self.server_error_timestamp = 0
 
         self.executor = ThreadPoolExecutor(max_workers=5)
+
+        self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
 
     def _process_data(self, observation_detail, title, msgs):
         msg = ''
@@ -220,7 +224,7 @@ class Pushover(StdService):
     def new_loop_packet(self, event):
         """ Handle the new loop packet event. """
         if self.client_error_timestamp:
-            if abs(time.time() - self.client_error_last_logged) >= self.client_error_log_frequency:
+            if abs(time.time() - self.client_error_last_logged) < self.client_error_log_frequency:
                 log.error("Fatal error occurred at %s, Pushover skipped.", self.client_error_timestamp)
                 self.client_error_last_logged = time.time()
                 return
@@ -236,18 +240,31 @@ class Pushover(StdService):
         for observation, observation_detail in self.observations.items():
             title = None
             if observation in event.packet:
-                if observation_detail['min']:
-                    msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['min'], event.packet[observation])
-                    title = f"Unexpected value for {observation}."
-                if observation_detail['max']:
-                    msgs['max'] = self._check_max_value(observation_detail['name'], observation_detail['max'], event.packet[observation])
-                    title = f"Unexpected value for {observation}."
-                if observation_detail['equal']:
-                    msgs['equal'] = self._check_equal_value(observation_detail['name'], observation_detail['equal'], event.packet[observation])
-                    title = f"Unexpected value for {observation}."
+                value = event.packet['observation']
+            else:
+                try:
+                    value_tuple = weewx.xtypes.get_scalar(observation, event.packet, self.dbm)
+                    value = value_tuple.value
+                except (weewx.UnknownType, weewx.CannotCalculate):
+                    value = None
 
-            #self.executor.submit(self._process_data, event.packet)
-            self._process_data(observation_detail, title, msgs)
+            if value:
+                if observation_detail['min']:
+                    msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['min'], value)
+                    if msgs['min']:
+                        title = f"Unexpected value for {observation}."
+                if observation_detail['max']:
+                    msgs['max'] = self._check_max_value(observation_detail['name'], observation_detail['max'], value)
+                    if msgs['max']:
+                        title = f"Unexpected value for {observation}."
+                if observation_detail['equal']:
+                    msgs['equal'] = self._check_equal_value(observation_detail['name'], observation_detail['equal'], value)
+                    if msgs['equal']:
+                        title = f"Unexpected value for {observation}."
+
+                if title:
+                    #self.executor.submit(self._process_data, event.packet)
+                    self._process_data(observation_detail, title, msgs)
 
     def shutDown(self): # need to override parent - pylint: disable=invalid-name
         """Run when an engine shutdown is requested."""
