@@ -239,26 +239,18 @@ class Pushover(StdService):
         msgs = {}
         for observation, observation_detail in self.observations.items():
             title = None
-            if observation in event.packet:
-                value = event.packet['observation']
-            else:
-                try:
-                    value_tuple = weewx.xtypes.get_scalar(observation, event.packet, self.dbm)
-                    value = value_tuple.value
-                except (weewx.UnknownType, weewx.CannotCalculate):
-                    value = None
 
-            if value:
+            if observation in event.packet and event.packet[observation]:
                 if observation_detail['min']:
-                    msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['min'], value)
+                    msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['min'], event.packet[observation])
                     if msgs['min']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail['max']:
-                    msgs['max'] = self._check_max_value(observation_detail['name'], observation_detail['max'], value)
+                    msgs['max'] = self._check_max_value(observation_detail['name'], observation_detail['max'], event.packet[observation])
                     if msgs['max']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail['equal']:
-                    msgs['equal'] = self._check_equal_value(observation_detail['name'], observation_detail['equal'], value)
+                    msgs['equal'] = self._check_equal_value(observation_detail['name'], observation_detail['equal'], event.packet[observation])
                     if msgs['equal']:
                         title = f"Unexpected value for {observation}."
 
