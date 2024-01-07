@@ -102,10 +102,16 @@ class Pushover(StdService):
         count = to_int(service_dict.get('count', 10))
         wait_time = to_int(service_dict.get('wait_time', 3600))
 
-        self.observations = {}
+        self.loop_observations = {}
+        self.archive_observation = {}
+
         for observation in service_dict['observations']:
             observation_binding = service_dict['observations'][observation].get('binding', binding)
-            self.observations[observation] = self.init_observation(service_dict['observations'][observation], observation, count, wait_time)
+            if observation_binding == 'loop':
+                self.loop_observations[observation] = self.init_observation(service_dict['observations'][observation], observation, count, wait_time)
+            if observation_binding == 'archive':
+                self.archive_observations[observation] = self.init_observation(service_dict['observations'][observation], observation, count, wait_time)
+            # ToDo: - error if unknown observation
 
         self.client_error_timestamp = 0
         self.client_error_last_logged = 0
@@ -113,6 +119,7 @@ class Pushover(StdService):
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
+        self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
 
     def init_observation(self, config, observation_name, count, wait_time):
@@ -248,6 +255,23 @@ class Pushover(StdService):
                     #self.executor.submit(self._push_notification, event.packet)
                     self._push_notification(observation_detail, title, msgs)
 
+    def new_archive_record(self, event):
+        """ Handle the new archive record event. """
+        if self.client_error_timestamp:
+            if abs(time.time() - self.client_error_last_logged) < self.client_error_log_frequency:
+                log.error("Fatal error occurred at %s, Pushover skipped.", self.client_error_timestamp)
+                self.client_error_last_logged = time.time()
+                return
+
+        if abs(time.time() - self.server_error_timestamp) < self.server_error_wait_period:
+            log.debug("Server error received at %s, waiting %s seconds before retrying.",
+                      self.server_error_timestamp,
+                      self.server_error_wait_period)
+            return
+        self.server_error_timestamp = 0
+        
+        self._process_data(event.record, self.archive_observation)
+
     def new_loop_packet(self, event):
         """ Handle the new loop packet event. """
         if self.client_error_timestamp:
@@ -263,7 +287,7 @@ class Pushover(StdService):
             return
         self.server_error_timestamp = 0
         
-        self._process_data(event.packet, self.observations)
+        self._process_data(event.packet, self.loop_observations)
 
     def shutDown(self): # need to override parent - pylint: disable=invalid-name
         """Run when an engine shutdown is requested."""
