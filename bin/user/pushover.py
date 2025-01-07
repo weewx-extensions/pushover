@@ -164,7 +164,11 @@ class Pushover(StdService):
         for _, value in msgs.items():
             if value:
                 msg += value
+        log.debug("Title is %s", title)
+        log.debug("Message is %s", msg)
+        log.debug("Server is: %s", self.server)
         connection = http.client.HTTPSConnection(f"{self.server}")
+
         connection.request("POST",
                            f"{self.api}",
                            urllib.parse.urlencode({
@@ -176,6 +180,7 @@ class Pushover(StdService):
                             { "Content-type": "application/x-www-form-urlencoded" })
         response = connection.getresponse()
         now = time.time()
+        log.debug("Response code is: %s", response.code)
 
         if response.code == 200:
             for key, value in msgs.items():
@@ -199,11 +204,15 @@ class Pushover(StdService):
                           exception.pos, exception.lineno, exception.colno)
 
     def _check_min_value(self, name, observation_detail, value):
+        log.debug("Checking if %s is less than %s for %s", value, observation_detail['value'], name)
+        log.debug("Running count is %s and threshold is %s", observation_detail['counter'], observation_detail['count'])
+        time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
+        log.debug("Time delta is %s and threshold is %s", time_delta, observation_detail['wait_time'])
         msg = ''
         if value < observation_detail['value']:
             observation_detail['counter'] += 1
             if observation_detail['counter'] >= observation_detail['count']:
-                if abs(time.time() - observation_detail['last_sent_timestamp']) >= observation_detail['wait_time']:
+                if  time_delta >= observation_detail['wait_time']:
                     msg = f"{name} value {value} is less than {observation_detail['value']}.\n"
         else:
             observation_detail['counter'] = 0
@@ -211,11 +220,15 @@ class Pushover(StdService):
         return msg
 
     def _check_max_value(self, name, observation_detail, value):
+        log.debug("Checking if %s is greater than %s for %s", value, observation_detail['value'], name)
+        log.debug("Running count is %s and threshold is %s", observation_detail['counter'], observation_detail['count'])
+        time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
+        log.debug("Time delta is %s and threshold is %s", time_delta, observation_detail['wait_time'])
         msg = ''
         if value > observation_detail['value']:
             observation_detail['counter'] += 1
             if observation_detail['counter'] >= observation_detail['count']:
-                if abs(time.time() - observation_detail['last_sent_timestamp']) >= observation_detail['wait_time']:
+                if time_delta >= observation_detail['wait_time']:
                     msg = f"{name} value {value} is greater than {observation_detail['value']}.\n"
         else:
             observation_detail['counter'] = 0
@@ -223,24 +236,30 @@ class Pushover(StdService):
         return msg
 
     def _check_equal_value(self, name, observation_detail, value):
+        log.debug("Checking if %s is equal to %s for %s", value, observation_detail['value'], name)
+        log.debug("Running count is %s and threshold is %s", observation_detail['counter'], observation_detail['count'])
+        time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
+        log.debug("Time delta is %s and threshold is %s", time_delta, observation_detail['wait_time'])
         msg = ''
         if value != observation_detail['value']:
             observation_detail['counter'] += 1
             if observation_detail['counter'] >= observation_detail['count']:
-                if abs(time.time() - observation_detail['last_sent_timestamp']) >= observation_detail['wait_time']:
+                if time_delta >= observation_detail['wait_time']:
                     msg += f"{name} value {value} is not equal {observation_detail['value']}.\n"
         else:
             observation_detail['counter'] = 0
 
         return msg
 
-    def _process_data(self, data, observations):   
+    def _process_data(self, data, observations):
+        log.debug("Processing record: %s", data)
         msgs = {}
         for obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
             title = None
 
             if observation in data and data[observation]:
+                log.debug("Processing observation: %s", observation)
                 if observation_detail['min']:
                     msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['min'], data[observation])
                     if msgs['min']:
