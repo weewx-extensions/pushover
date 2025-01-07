@@ -103,7 +103,7 @@ class Pushover(StdService):
         wait_time = to_int(service_dict.get('wait_time', 3600))
 
         self.loop_observations = {}
-        self.archive_observation = {}
+        self.archive_observations = {}
 
         for observation in service_dict['observations']:
             observation_binding = service_dict['observations'][observation].get('binding', binding)
@@ -112,6 +112,9 @@ class Pushover(StdService):
             if observation_binding == 'archive':
                 self.archive_observations[observation] = self.init_observation(service_dict['observations'][observation], observation, count, wait_time)
             # ToDo: - error if unknown observation
+            
+        log.info("loop observations: %s", self.loop_observations)
+        log.info("archive observations: %s", self.archive_observations)
 
         self.client_error_timestamp = 0
         self.client_error_last_logged = 0
@@ -270,7 +273,7 @@ class Pushover(StdService):
             return
         self.server_error_timestamp = 0
         
-        self._process_data(event.record, self.archive_observation)
+        self._process_data(event.record, self.archive_observations)
 
     def new_loop_packet(self, event):
         """ Handle the new loop packet event. """
