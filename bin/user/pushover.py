@@ -129,6 +129,9 @@ class Pushover(StdService):
         observation = {}
         observation['name'] = config.get('name', observation_name)
         observation['weewx_name'] = config.get('weewx_name', observation_name)
+        observation['label'] = config.get('label', '')
+        if observation['label']:
+          observation['label'] = ' (' + observation['label'] + ')'
 
         observation['min'] = {}
         min_value = config.get('min', None)
@@ -203,7 +206,7 @@ class Pushover(StdService):
                 log.error("Error at %s, line: %s column: %s",
                           exception.pos, exception.lineno, exception.colno)
 
-    def _check_min_value(self, name, observation_detail, value):
+    def _check_min_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is less than %s for %s", value, observation_detail['value'], name)
         log.debug("Running count is %s and threshold is %s", observation_detail['counter'], observation_detail['count'])
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
@@ -213,13 +216,13 @@ class Pushover(StdService):
             observation_detail['counter'] += 1
             if observation_detail['counter'] >= observation_detail['count']:
                 if  time_delta >= observation_detail['wait_time']:
-                    msg = f"{name} value {value} is less than {observation_detail['value']}.\n"
+                    msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
         else:
             observation_detail['counter'] = 0
 
         return msg
 
-    def _check_max_value(self, name, observation_detail, value):
+    def _check_max_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is greater than %s for %s", value, observation_detail['value'], name)
         log.debug("Running count is %s and threshold is %s", observation_detail['counter'], observation_detail['count'])
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
@@ -229,13 +232,13 @@ class Pushover(StdService):
             observation_detail['counter'] += 1
             if observation_detail['counter'] >= observation_detail['count']:
                 if time_delta >= observation_detail['wait_time']:
-                    msg = f"{name} value {value} is greater than {observation_detail['value']}.\n"
+                    msg = f"{name}{label} value {value} is greater than {observation_detail['value']}.\n"
         else:
             observation_detail['counter'] = 0
 
         return msg
 
-    def _check_equal_value(self, name, observation_detail, value):
+    def _check_equal_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is equal to %s for %s", value, observation_detail['value'], name)
         log.debug("Running count is %s and threshold is %s", observation_detail['counter'], observation_detail['count'])
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
@@ -245,7 +248,7 @@ class Pushover(StdService):
             observation_detail['counter'] += 1
             if observation_detail['counter'] >= observation_detail['count']:
                 if time_delta >= observation_detail['wait_time']:
-                    msg += f"{name} value {value} is not equal {observation_detail['value']}.\n"
+                    msg += f"{name}{label} value {value} is not equal {observation_detail['value']}.\n"
         else:
             observation_detail['counter'] = 0
 
@@ -261,15 +264,15 @@ class Pushover(StdService):
             if observation in data and data[observation]:
                 log.debug("Processing observation: %s", observation)
                 if observation_detail['min']:
-                    msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['min'], data[observation])
+                    msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['label'], observation_detail['min'], data[observation])
                     if msgs['min']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail['max']:
-                    msgs['max'] = self._check_max_value(observation_detail['name'], observation_detail['max'], data[observation])
+                    msgs['max'] = self._check_max_value(observation_detail['name'], observation_detail['label'], observation_detail['max'], data[observation])
                     if msgs['max']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail['equal']:
-                    msgs['equal'] = self._check_equal_value(observation_detail['name'], observation_detail['equal'], data[observation])
+                    msgs['equal'] = self._check_equal_value(observation_detail['name'], observation_detail['label'], observation_detail['equal'], data[observation])
                     if msgs['equal']:
                         title = f"Unexpected value for {observation}."
 
