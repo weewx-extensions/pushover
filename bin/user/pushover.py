@@ -208,9 +208,9 @@ class Pushover(StdService):
 
     def _check_min_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is less than %s for %s", value, observation_detail['value'], name)
-        log.debug("Running count is %s and threshold is %s", observation_detail['counter'], observation_detail['count'])
+        log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
-        log.debug("Time delta is %s and threshold is %s", time_delta, observation_detail['wait_time'])
+        log.debug("Time delta is %s and threshold is %s for %s", time_delta, observation_detail['wait_time'], name)
         msg = ''
         if value < observation_detail['value']:
             observation_detail['counter'] += 1
@@ -224,9 +224,9 @@ class Pushover(StdService):
 
     def _check_max_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is greater than %s for %s", value, observation_detail['value'], name)
-        log.debug("Running count is %s and threshold is %s", observation_detail['counter'], observation_detail['count'])
+        log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
-        log.debug("Time delta is %s and threshold is %s", time_delta, observation_detail['wait_time'])
+        log.debug("Time delta is %s and threshold is %s for %s", time_delta, observation_detail['wait_time'], name)
         msg = ''
         if value > observation_detail['value']:
             observation_detail['counter'] += 1
@@ -240,9 +240,9 @@ class Pushover(StdService):
 
     def _check_equal_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is equal to %s for %s", value, observation_detail['value'], name)
-        log.debug("Running count is %s and threshold is %s", observation_detail['counter'], observation_detail['count'])
+        log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
-        log.debug("Time delta is %s and threshold is %s", time_delta, observation_detail['wait_time'])
+        log.debug("Time delta is %s and threshold is %s for %s", time_delta, observation_detail['wait_time'], name)
         msg = ''
         if value != observation_detail['value']:
             observation_detail['counter'] += 1
