@@ -162,14 +162,14 @@ class Pushover(StdService):
 
         return observation         
   
-    def _push_notification(self, observation_detail, title, msgs):
+    def _push_notification(self, obs, observation_detail, title, msgs):
         msg = ''
         for _, value in msgs.items():
             if value:
                 msg += value
-        log.debug("Title is %s", title)
-        log.debug("Message is %s", msg)
-        log.debug("Server is: %s", self.server)
+        log.debug("Title is '%s' for %s", title, obs)
+        log.debug("Message is '%s' for %s", msg, obs)
+        log.debug("Server is: '%s' for %s", self.server, obs)
         connection = http.client.HTTPSConnection(f"{self.server}")
 
         connection.request("POST",
@@ -183,7 +183,7 @@ class Pushover(StdService):
                             { "Content-type": "application/x-www-form-urlencoded" })
         response = connection.getresponse()
         now = time.time()
-        log.debug("Response code is: %s", response.code)
+        log.debug("Response code is: '%s' for %s", response.code, obs)
 
         if response.code == 200:
             for key, value in msgs.items():
@@ -191,7 +191,7 @@ class Pushover(StdService):
                     observation_detail[key]['last_sent_timestamp'] = now
 
         else:
-            log.error("Received code %s", response.code)
+            log.error("Received code '%s' for %s", response.code, obs)
             if response.code >= 400 and response.code < 500:
                 self.client_error_timestamp = now
                 self.client_error_last_logged = now
@@ -200,11 +200,11 @@ class Pushover(StdService):
             response_body = response.read().decode()
             try:
                 response_dict = json.loads(response_body)
-                log.error('\n'.join(response_dict['errors']))
+                log.error("%s for %s", '\n'.join(response_dict['errors']), obs)
             except json.JSONDecodeError as exception:
-                log.error("Unable to parse %s.", exception.doc)
-                log.error("Error at %s, line: %s column: %s",
-                          exception.pos, exception.lineno, exception.colno)
+                log.error("Unable to parse '%s' for %s.", exception.doc, obs)
+                log.error("Error at '%s', line: '%s' column: '%s' for %s",
+                          exception.pos, exception.lineno, exception.colno, obs)
 
     def _check_min_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is less than %s for %s", value, observation_detail['value'], name)
@@ -278,7 +278,7 @@ class Pushover(StdService):
 
                 if title:
                     #self.executor.submit(self._push_notification, event.packet)
-                    self._push_notification(observation_detail, title, msgs)
+                    self._push_notification(obs, observation_detail, title, msgs)
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
