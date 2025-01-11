@@ -3,6 +3,11 @@
 #
 #    See the file LICENSE.txt for your full rights.
 #
+
+# pylint: disable=fixme
+# pylint: disable=line-too-long
+# ToDo: find a better way to handle pylint errors
+
 '''
 Monitor that observation values are within a defined range.
 If a value is out of range, send a notification via pushover.net
