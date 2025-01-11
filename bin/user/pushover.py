@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2023 Rich Bell <bellrichm@gmail.com>
+#    Copyright (c) 2023 - 2025 Rich Bell <bellrichm@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -189,6 +189,7 @@ class Pushover(StdService):
             for key, value in msgs.items():
                 if value:
                     observation_detail[key]['last_sent_timestamp'] = now
+                    observation_detail[key]['counter'] = 0
 
         else:
             log.error("Received code '%s' for %s", response.code, obs)
@@ -208,49 +209,46 @@ class Pushover(StdService):
 
     def _check_min_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is less than %s for %s", value, observation_detail['value'], name)
-        log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("Time delta is %s and threshold is %s for %s", time_delta, observation_detail['wait_time'], name)
+
         msg = ''
-        if value < observation_detail['value']:
-            observation_detail['counter'] += 1
-            if observation_detail['counter'] >= observation_detail['count']:
-                if  time_delta >= observation_detail['wait_time']:
+        if  time_delta >= observation_detail['wait_time']:
+            if value < observation_detail['value']:
+                observation_detail['counter'] += 1
+                log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
+                if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
-        else:
-            observation_detail['counter'] = 0
 
         return msg
 
     def _check_max_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is greater than %s for %s", value, observation_detail['value'], name)
-        log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("Time delta is %s and threshold is %s for %s", time_delta, observation_detail['wait_time'], name)
+
         msg = ''
-        if value > observation_detail['value']:
-            observation_detail['counter'] += 1
-            if observation_detail['counter'] >= observation_detail['count']:
-                if time_delta >= observation_detail['wait_time']:
-                    msg = f"{name}{label} value {value} is greater than {observation_detail['value']}.\n"
-        else:
-            observation_detail['counter'] = 0
+        if  time_delta >= observation_detail['wait_time']:
+            if value > observation_detail['value']:
+                observation_detail['counter'] += 1
+                log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
+                if observation_detail['counter'] >= observation_detail['count']:
+                    msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
 
         return msg
 
     def _check_equal_value(self, name, label, observation_detail, value):
         log.debug("Checking if %s is equal to %s for %s", value, observation_detail['value'], name)
-        log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("Time delta is %s and threshold is %s for %s", time_delta, observation_detail['wait_time'], name)
+
         msg = ''
-        if value != observation_detail['value']:
-            observation_detail['counter'] += 1
-            if observation_detail['counter'] >= observation_detail['count']:
-                if time_delta >= observation_detail['wait_time']:
-                    msg += f"{name}{label} value {value} is not equal {observation_detail['value']}.\n"
-        else:
-            observation_detail['counter'] = 0
+        if  time_delta >= observation_detail['wait_time']:
+            if value != observation_detail['value']:
+                observation_detail['counter'] += 1
+                log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
+                if observation_detail['counter'] >= observation_detail['count']:
+                    msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
 
         return msg
 
