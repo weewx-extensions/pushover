@@ -112,7 +112,7 @@ class Pushover(StdService):
             if observation_binding == 'archive':
                 self.archive_observations[observation] = self.init_observation(service_dict['observations'][observation], observation, count, wait_time)
             # ToDo: - error if unknown observation
-            
+
         log.info("loop observations: %s", self.loop_observations)
         log.info("archive observations: %s", self.archive_observations)
 
@@ -131,7 +131,7 @@ class Pushover(StdService):
         observation['weewx_name'] = config.get('weewx_name', observation_name)
         observation['label'] = config.get('label', '')
         if observation['label']:
-          observation['label'] = ' (' + observation['label'] + ')'
+            observation['label'] = ' (' + observation['label'] + ')'
 
         observation['min'] = {}
         min_value = config.get('min', None)
@@ -160,8 +160,8 @@ class Pushover(StdService):
             observation['equal']['last_sent_timestamp'] = 0
             observation['equal']['counter'] = 0
 
-        return observation         
-  
+        return observation
+
     def _push_notification(self, obs, observation_detail, title, msgs):
         msg = ''
         for _, value in msgs.items():
@@ -292,7 +292,7 @@ class Pushover(StdService):
                       self.server_error_wait_period)
             return
         self.server_error_timestamp = 0
-        
+
         self._process_data(event.record, self.archive_observations)
 
     def new_loop_packet(self, event):
@@ -309,7 +309,7 @@ class Pushover(StdService):
                       self.server_error_wait_period)
             return
         self.server_error_timestamp = 0
-        
+
         self._process_data(event.packet, self.loop_observations)
 
     def shutDown(self): # need to override parent - pylint: disable=invalid-name
@@ -348,6 +348,9 @@ def main():
     packet = {'dateTime': int(time.time()),
               'extraTemp6': 6,
             }
+
+    # ToDo: Make enable an option
+    config_dict['Pushover']['enable'] = True
 
     pushover = Pushover(engine, config_dict)
 
