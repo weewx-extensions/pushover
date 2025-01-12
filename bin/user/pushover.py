@@ -38,31 +38,24 @@ Configuration:
     # The set of WeeWX observations to monitor.
     # Each subsection is the name of WeeWX observation.
     # For example, outTemp, inTemp, txBatteryStatus, etc
-    [[observations]]
+    [[loop or archive]]
         [[[REPLACE_ME]]]
             # A Descriptive name of this observation
             # Default is the WeeWX name.
             #name = 
+            
+            [[[[ min or max or equal]]]]
+                # The time in seconds to wait before sending another notification.
+                # This is used to throttle the number of notifications.
+                # The default is 3600 seconds.
+                #wait_time = 3600
 
+                # The number of times the threshold needs to be reached before sending a notification.
+                # The default is 10.
+                #count = 10
 
-            # The time in seconds to wait before sending another notification.
-            # This is used to throttle the number of notifications.
-            # The default is 3600 seconds.
-            #wait_time = 3600
-
-            # The number of times the minimum needs to be reached before sending a notification.
-            # The default is 10.
-            #min_count = 10
-
-            # The minimum value to monitor.
-            #min = REPLACE_ME
-
-            # The number of times the minimum needs to be reached before sending a notification.
-            # The default is 10.
-            #max_count = 10
-
-            The maximum value to monitor.
-            #max =  REPLACE_ME
+                # The value to monitor.
+                #value = REPLACE_ME
 '''
 
 import argparse
@@ -108,17 +101,15 @@ class Pushover(StdService):
         wait_time = to_int(service_dict.get('wait_time', 3600))
 
         self.loop_observations = {}
-        self.archive_observations = {}
-
-        for observation in service_dict['observations']:
-            observation_binding = service_dict['observations'][observation].get('binding', binding)
-            if observation_binding == 'loop':
-                self.loop_observations[observation] = self.init_observation(service_dict['observations'][observation], observation, count, wait_time)
-            if observation_binding == 'archive':
-                self.archive_observations[observation] = self.init_observation(service_dict['observations'][observation], observation, count, wait_time)
-            # ToDo: - error if unknown observation
-
+        if 'loop' in service_dict:
+            for observation in service_dict['loop']:
+                self.loop_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, wait_time)
         log.info("loop observations: %s", self.loop_observations)
+
+        self.archive_observations = {}
+        if 'archive' in service_dict:
+            for observation in service_dict['archive']:
+                self.archive_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, wait_time)
         log.info("archive observations: %s", self.archive_observations)
 
         self.client_error_timestamp = 0
@@ -127,43 +118,28 @@ class Pushover(StdService):
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
-        self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
-        self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
+        if self.archive_observations:
+            self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
-    def init_observation(self, config, observation_name, count, wait_time):
+        if self.loop_observations:
+            self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
+
+    def init_observations(self, config, observation_name, count, wait_time):
         observation = {}
         observation['name'] = config.get('name', observation_name)
         observation['weewx_name'] = config.get('weewx_name', observation_name)
         observation['label'] = config.get('label', '')
         if observation['label']:
             observation['label'] = ' (' + observation['label'] + ')'
-
-        observation['min'] = {}
-        min_value = config.get('min', None)
-        if min_value:
-            observation['min']['value'] = to_int(min_value)
-            observation['min']['count'] = to_int(config.get('min_count', count))
-            observation['min']['wait_time'] = to_int(config.get('min_wait_time', wait_time))
-            observation['min']['last_sent_timestamp'] = 0
-            observation['min']['counter'] = 0
-
-        observation['max'] = {}
-        max_value = config.get('max', None)
-        if max_value:
-            observation['max']['value'] = to_int(max_value)
-            observation['max']['count'] = to_int(config.get('max_count', count))
-            observation['max']['wait_time'] = to_int(config.get('max_wait_time', wait_time))
-            observation['max']['last_sent_timestamp'] = 0
-            observation['max']['counter'] = 0
-
-        observation['equal'] = {}
-        equal_value = config.get('equal', None)
-        if equal_value:
-            observation['equal']['value'] = to_int(equal_value)
-            observation['equal']['count'] = to_int(config.get('equal_count', count))
-            observation['equal']['wait_time'] = to_int(config.get('equal_wait_time', wait_time))
-            observation['equal']['last_sent_timestamp'] = 0
-            observation['equal']['counter'] = 0
+            
+        for value_type in ['min', 'max', 'equal']:
+            observation[value_type] = {}
+            if value_type in config:
+                observation[value_type]['value'] = int(config[value_type]['value'])
+                observation[value_type]['count'] = int(config[value_type].get('coumt', count))
+                observation[value_type]['wait_time'] = to_int(config[value_type].get('wait_time', wait_time))
+                observation[value_type]['last_sent_timestamp'] = 0
+                observation[value_type]['counter'] = 0
 
         return observation
 
