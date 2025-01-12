@@ -100,14 +100,16 @@ class Pushover(StdService):
         count = to_int(service_dict.get('count', 10))
         wait_time = to_int(service_dict.get('wait_time', 3600))
 
-        self.loop_observations = none
-        for observation in service_dict['loop']:
-            self.loop_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, wait_time)
+        self.loop_observations = {}
+        if 'loop' in service_dict:
+            for observation in service_dict['loop']:
+                self.loop_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, wait_time)
         log.info("loop observations: %s", self.loop_observations)
 
-        self.archive_observations = none
-        for observation in service_dict['archive']:
-            self.archive_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, wait_time)
+        self.archive_observations = {}
+        if 'archive' in service_dict:
+            for observation in service_dict['archive']:
+                self.archive_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, wait_time)
         log.info("archive observations: %s", self.archive_observations)
 
         self.client_error_timestamp = 0
