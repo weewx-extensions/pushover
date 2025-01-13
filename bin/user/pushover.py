@@ -88,6 +88,9 @@ class Pushover(StdService):
             log.info("Pushover is not enabled, exiting")
             return
 
+        self.push = to_bool(service_dict.get('push', True))
+        self.log = to_bool(service_dict.get('log', True))
+
         self.user_key = service_dict.get('user_key', None)
         self.app_token = service_dict.get('app_token', None)
         self.server = service_dict.get('server', 'api.pushover.net:443')
@@ -142,6 +145,14 @@ class Pushover(StdService):
                 observation[value_type]['counter'] = 0
 
         return observation
+
+    def _logit(self, title, msgs):
+        msg = ''
+        for _, value in msgs.items():
+            if value:
+                msg += value
+        log.info(title)
+        log.info(msg)
 
     def _push_notification(self, obs, observation_detail, title, msgs):
         msg = ''
@@ -256,8 +267,17 @@ class Pushover(StdService):
                         title = f"Unexpected value for {observation}."
 
                 if title:
-                    #self.executor.submit(self._push_notification, event.packet)
-                    self._push_notification(obs, observation_detail, title, msgs)
+                    if self.log:
+                        self._logit(title, msgs)
+                    if self.push:
+                        #self.executor.submit(self._push_notification, event.packet)
+                        self._push_notification(obs, observation_detail, title, msgs)
+                    else:
+                        now = time.time()
+                        for key, value in msgs.items():
+                            if value:
+                                observation_detail[key]['last_sent_timestamp'] = now
+                                observation_detail[key]['counter'] = 0
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
