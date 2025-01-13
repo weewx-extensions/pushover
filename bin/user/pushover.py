@@ -111,7 +111,7 @@ class Pushover(StdService):
         self.archive_observations = {}
         if 'archive' in service_dict:
             for observation in service_dict['archive']:
-                self.archive_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, wait_time)
+                self.archive_observations[observation] = self.init_observations(service_dict['archive'][observation], observation, count, wait_time)
         log.info("archive observations: %s", self.archive_observations)
 
         self.client_error_timestamp = 0
@@ -135,10 +135,11 @@ class Pushover(StdService):
         if observation['label']:
             observation['label'] = ' (' + observation['label'] + ')'
 
-        for value_type in ['min', 'max', 'equal']:
+        for value_type in ['min', 'max', 'equal', 'missing']:
             observation[value_type] = {}
             if value_type in config:
-                observation[value_type]['value'] = int(config[value_type]['value'])
+                if value_type != 'missing':
+                    observation[value_type]['value'] = int(config[value_type]['value'])
                 observation[value_type]['count'] = int(config[value_type].get('coumt', count))
                 observation[value_type]['wait_time'] = to_int(config[value_type].get('wait_time', wait_time))
                 observation[value_type]['last_sent_timestamp'] = 0
@@ -266,18 +267,22 @@ class Pushover(StdService):
                     if msgs['equal']:
                         title = f"Unexpected value for {observation}."
 
-                if title:
-                    if self.log:
-                        self._logit(title, msgs)
-                    if self.push:
-                        #self.executor.submit(self._push_notification, event.packet)
-                        self._push_notification(obs, observation_detail, title, msgs)
-                    else:
-                        now = time.time()
-                        for key, value in msgs.items():
-                            if value:
-                                observation_detail[key]['last_sent_timestamp'] = now
-                                observation_detail[key]['counter'] = 0
+            if observation not in data and observation_detail['missing']:
+                title = f"Unexpected value for {observation}."
+                msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} is missing.\n"
+
+            if title:
+                if self.log:
+                    self._logit(title, msgs)
+                if self.push:
+                    #self.executor.submit(self._push_notification, event.packet)
+                    self._push_notification(obs, observation_detail, title, msgs)
+                else:
+                    now = time.time()
+                    for key, value in msgs.items():
+                        if value:
+                            observation_detail[key]['last_sent_timestamp'] = now
+                            observation_detail[key]['counter'] = 0
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
@@ -347,7 +352,7 @@ def main():
     engine = weewx.engine.DummyEngine(min_config_dict)
 
     packet = {'dateTime': int(time.time()),
-              'extraTemp6': 6,
+              'mon_extraTemp6': 6,
             }
 
     # ToDo: Make enable an option
@@ -359,7 +364,8 @@ def main():
 
     pushover.new_loop_packet(event)
 
-    #pushover.new_loop_packet(event)
+    event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
+    pushover.new_archive_record(event)
 
     pushover.shutDown()
 
