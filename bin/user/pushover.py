@@ -117,6 +117,7 @@ class Pushover(StdService):
         self.client_error_timestamp = 0
         self.client_error_last_logged = 0
         self.server_error_timestamp = 0
+        self.missing_observations = {}
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
@@ -248,12 +249,20 @@ class Pushover(StdService):
     def _process_data(self, data, observations):
         log.debug("Processing record: %s", data)
         msgs = {}
+        now = time.time()
         for obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
             title = None
 
             if observation in data and data[observation]:
                 log.debug("Processing observation: %s", observation)
+                # This means that if an observation 'goes missing', it needs a value that is not None to be marked as 'back'
+                if observation in self.missing_observations:
+                    observation_detail['missing']['counter'] = 0
+                    title = f"Unexpected value for {observation}."
+                    msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} missing at {self.missing_observations[observation]['missing_time']} has returned.\n"
+                    del self.missing_observations[observation]
+
                 if observation_detail['min']:
                     msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['label'], observation_detail['min'], data[observation])
                     if msgs['min']:
@@ -268,8 +277,14 @@ class Pushover(StdService):
                         title = f"Unexpected value for {observation}."
 
             if observation not in data and observation_detail['missing']:
-                title = f"Unexpected value for {observation}."
-                msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} is missing.\n"
+                time_delta = now - observation_detail['missing']['last_sent_timestamp']
+                if  time_delta >= observation_detail['missing']['wait_time']:
+                    observation_detail['missing']['counter'] += 1
+                    title = f"Unexpected value for {observation}."
+                    msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} is missing.\n"
+                    if observation not in self.missing_observations:
+                        self.missing_observations[observation] = {}
+                        self.missing_observations[observation]['missing_time'] = now
 
             if title:
                 if self.log:
@@ -278,7 +293,6 @@ class Pushover(StdService):
                     #self.executor.submit(self._push_notification, event.packet)
                     self._push_notification(obs, observation_detail, title, msgs)
                 else:
-                    now = time.time()
                     for key, value in msgs.items():
                         if value:
                             observation_detail[key]['last_sent_timestamp'] = now
@@ -364,6 +378,13 @@ def main():
 
     pushover.new_loop_packet(event)
 
+    event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
+    pushover.new_archive_record(event)
+
+    packet = {'dateTime': int(time.time()),
+              'mon_extraTemp6': 6,
+              'mon_extraTemp1': 1,
+            }
     event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
     pushover.new_archive_record(event)
 
