@@ -96,7 +96,6 @@ class Pushover(StdService):
         self.client_error_log_frequency = to_int(service_dict.get('client_error_log_frequency', 3600))
         self.server_error_wait_period = to_int(service_dict.get('server_error_wait_period', 3600))
 
-        binding = service_dict.get('binding', 'loop')
         count = to_int(service_dict.get('count', 10))
         wait_time = to_int(service_dict.get('wait_time', 3600))
 
@@ -125,13 +124,14 @@ class Pushover(StdService):
             self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
 
     def init_observations(self, config, observation_name, count, wait_time):
+        ''' Initialize the observation configruation. '''
         observation = {}
         observation['name'] = config.get('name', observation_name)
         observation['weewx_name'] = config.get('weewx_name', observation_name)
         observation['label'] = config.get('label', '')
         if observation['label']:
             observation['label'] = ' (' + observation['label'] + ')'
-            
+
         for value_type in ['min', 'max', 'equal']:
             observation[value_type] = {}
             if value_type in config:
