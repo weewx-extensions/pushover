@@ -88,6 +88,9 @@ class Pushover(StdService):
             log.info("Pushover is not enabled, exiting")
             return
 
+        self.push = to_bool(service_dict.get('push', True))
+        self.log = to_bool(service_dict.get('log', True))
+
         self.user_key = service_dict.get('user_key', None)
         self.app_token = service_dict.get('app_token', None)
         self.server = service_dict.get('server', 'api.pushover.net:443')
@@ -96,7 +99,6 @@ class Pushover(StdService):
         self.client_error_log_frequency = to_int(service_dict.get('client_error_log_frequency', 3600))
         self.server_error_wait_period = to_int(service_dict.get('server_error_wait_period', 3600))
 
-        binding = service_dict.get('binding', 'loop')
         count = to_int(service_dict.get('count', 10))
         wait_time = to_int(service_dict.get('wait_time', 3600))
 
@@ -109,12 +111,13 @@ class Pushover(StdService):
         self.archive_observations = {}
         if 'archive' in service_dict:
             for observation in service_dict['archive']:
-                self.archive_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, wait_time)
+                self.archive_observations[observation] = self.init_observations(service_dict['archive'][observation], observation, count, wait_time)
         log.info("archive observations: %s", self.archive_observations)
 
         self.client_error_timestamp = 0
         self.client_error_last_logged = 0
         self.server_error_timestamp = 0
+        self.missing_observations = {}
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
@@ -125,23 +128,33 @@ class Pushover(StdService):
             self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
 
     def init_observations(self, config, observation_name, count, wait_time):
+        ''' Initialize the observation configruation. '''
         observation = {}
         observation['name'] = config.get('name', observation_name)
         observation['weewx_name'] = config.get('weewx_name', observation_name)
         observation['label'] = config.get('label', '')
         if observation['label']:
             observation['label'] = ' (' + observation['label'] + ')'
-            
-        for value_type in ['min', 'max', 'equal']:
+
+        for value_type in ['min', 'max', 'equal', 'missing']:
             observation[value_type] = {}
             if value_type in config:
-                observation[value_type]['value'] = int(config[value_type]['value'])
+                if value_type != 'missing':
+                    observation[value_type]['value'] = int(config[value_type]['value'])
                 observation[value_type]['count'] = int(config[value_type].get('coumt', count))
                 observation[value_type]['wait_time'] = to_int(config[value_type].get('wait_time', wait_time))
                 observation[value_type]['last_sent_timestamp'] = 0
                 observation[value_type]['counter'] = 0
 
         return observation
+
+    def _logit(self, title, msgs):
+        msg = ''
+        for _, value in msgs.items():
+            if value:
+                msg += value
+        log.info(title)
+        log.info(msg)
 
     def _push_notification(self, obs, observation_detail, title, msgs):
         msg = ''
@@ -236,12 +249,20 @@ class Pushover(StdService):
     def _process_data(self, data, observations):
         log.debug("Processing record: %s", data)
         msgs = {}
+        now = time.time()
         for obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
             title = None
 
             if observation in data and data[observation]:
                 log.debug("Processing observation: %s", observation)
+                # This means that if an observation 'goes missing', it needs a value that is not None to be marked as 'back'
+                if observation in self.missing_observations:
+                    observation_detail['missing']['counter'] = 0
+                    title = f"Unexpected value for {observation}."
+                    msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} missing at {self.missing_observations[observation]['missing_time']} has returned.\n"
+                    del self.missing_observations[observation]
+
                 if observation_detail['min']:
                     msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['label'], observation_detail['min'], data[observation])
                     if msgs['min']:
@@ -255,9 +276,27 @@ class Pushover(StdService):
                     if msgs['equal']:
                         title = f"Unexpected value for {observation}."
 
-                if title:
+            if observation not in data and observation_detail['missing']:
+                time_delta = now - observation_detail['missing']['last_sent_timestamp']
+                if  time_delta >= observation_detail['missing']['wait_time']:
+                    observation_detail['missing']['counter'] += 1
+                    title = f"Unexpected value for {observation}."
+                    msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} is missing.\n"
+                    if observation not in self.missing_observations:
+                        self.missing_observations[observation] = {}
+                        self.missing_observations[observation]['missing_time'] = now
+
+            if title:
+                if self.log:
+                    self._logit(title, msgs)
+                if self.push:
                     #self.executor.submit(self._push_notification, event.packet)
                     self._push_notification(obs, observation_detail, title, msgs)
+                else:
+                    for key, value in msgs.items():
+                        if value:
+                            observation_detail[key]['last_sent_timestamp'] = now
+                            observation_detail[key]['counter'] = 0
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
@@ -327,7 +366,7 @@ def main():
     engine = weewx.engine.DummyEngine(min_config_dict)
 
     packet = {'dateTime': int(time.time()),
-              'extraTemp6': 6,
+              'mon_extraTemp6': 6,
             }
 
     # ToDo: Make enable an option
@@ -339,7 +378,15 @@ def main():
 
     pushover.new_loop_packet(event)
 
-    #pushover.new_loop_packet(event)
+    event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
+    pushover.new_archive_record(event)
+
+    packet = {'dateTime': int(time.time()),
+              'mon_extraTemp6': 6,
+              'mon_extraTemp1': 1,
+            }
+    event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
+    pushover.new_archive_record(event)
 
     pushover.shutDown()
 
