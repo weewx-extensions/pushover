@@ -104,14 +104,16 @@ class Pushover(StdService):
 
         self.loop_observations = {}
         if 'loop' in service_dict:
+            default_loop_wait_time = to_int(service_dict['loop'].get('wait_time', wait_time))
             for observation in service_dict['loop']:
-                self.loop_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, wait_time)
+                self.loop_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, default_loop_wait_time)
         log.info("loop observations: %s", self.loop_observations)
 
         self.archive_observations = {}
         if 'archive' in service_dict:
+            default_archive_wait_time = to_int(service_dict['archive'].get('wait_time', wait_time))
             for observation in service_dict['archive']:
-                self.archive_observations[observation] = self.init_observations(service_dict['archive'][observation], observation, count, wait_time)
+                self.archive_observations[observation] = self.init_observations(service_dict['archive'][observation], observation, count, default_archive_wait_time)
         log.info("archive observations: %s", self.archive_observations)
 
         self.client_error_timestamp = 0
@@ -137,8 +139,8 @@ class Pushover(StdService):
             observation['label'] = ' (' + observation['label'] + ')'
 
         for value_type in ['min', 'max', 'equal', 'missing']:
-            observation[value_type] = {}
             if value_type in config:
+                observation[value_type] = {}
                 if value_type != 'missing':
                     observation[value_type]['value'] = int(config[value_type]['value'])
                 observation[value_type]['count'] = int(config[value_type].get('coumt', count))
@@ -227,7 +229,7 @@ class Pushover(StdService):
                 observation_detail['counter'] += 1
                 log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
                 if observation_detail['counter'] >= observation_detail['count']:
-                    msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
+                    msg = f"{name}{label} value {value} is greater than {observation_detail['value']}.\n"
 
         return msg
 
@@ -242,7 +244,7 @@ class Pushover(StdService):
                 observation_detail['counter'] += 1
                 log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
                 if observation_detail['counter'] >= observation_detail['count']:
-                    msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
+                    msg = f"{name}{label} value {value} is equal to {observation_detail['value']}.\n"
 
         return msg
 
@@ -257,26 +259,27 @@ class Pushover(StdService):
             if observation in data and data[observation]:
                 log.debug("Processing observation: %s", observation)
                 # This means that if an observation 'goes missing', it needs a value that is not None to be marked as 'back'
-                if observation in self.missing_observations:
-                    observation_detail['missing']['counter'] = 0
-                    title = f"Unexpected value for {observation}."
-                    msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} missing at {self.missing_observations[observation]['missing_time']} has returned.\n"
-                    del self.missing_observations[observation]
+                if observation_detail.get('missing', None):
+                    if observation in self.missing_observations:
+                        #observation_detail['missing']['counter'] = 0
+                        title = f"Unexpected value for {observation}."
+                        msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} missing at {self.missing_observations[observation]['missing_time']} has returned with value {data[observation]}.\n"
+                        del self.missing_observations[observation]
 
-                if observation_detail['min']:
+                if observation_detail.get('min', None):
                     msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['label'], observation_detail['min'], data[observation])
                     if msgs['min']:
                         title = f"Unexpected value for {observation}."
-                if observation_detail['max']:
+                if observation_detail.get('max', None):
                     msgs['max'] = self._check_max_value(observation_detail['name'], observation_detail['label'], observation_detail['max'], data[observation])
                     if msgs['max']:
                         title = f"Unexpected value for {observation}."
-                if observation_detail['equal']:
+                if observation_detail.get('equal', None):
                     msgs['equal'] = self._check_equal_value(observation_detail['name'], observation_detail['label'], observation_detail['equal'], data[observation])
                     if msgs['equal']:
                         title = f"Unexpected value for {observation}."
 
-            if observation not in data and observation_detail['missing']:
+            if observation not in data and observation_detail.get('missing', None):
                 time_delta = now - observation_detail['missing']['last_sent_timestamp']
                 if  time_delta >= observation_detail['missing']['wait_time']:
                     observation_detail['missing']['counter'] += 1
