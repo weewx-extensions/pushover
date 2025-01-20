@@ -143,7 +143,7 @@ class Pushover(StdService):
                 observation[value_type] = {}
                 if value_type != 'missing':
                     observation[value_type]['value'] = int(config[value_type]['value'])
-                observation[value_type]['count'] = int(config[value_type].get('coumt', count))
+                observation[value_type]['count'] = int(config[value_type].get('count', count))
                 observation[value_type]['wait_time'] = to_int(config[value_type].get('wait_time', wait_time))
                 observation[value_type]['last_sent_timestamp'] = 0
                 observation[value_type]['counter'] = 0
@@ -289,10 +289,10 @@ class Pushover(StdService):
                     log.debug("  Running count is %s and threshold is %s for %s", observation_detail['missing']['counter'], observation_detail['missing']['count'], observation)
 
                     # ToDo: check running count
-                    # if observation_detail['missing']['counter'] >= observation_detail['missing']['count']:
-                    title = f"Unexpected value for {observation}."
-                    msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} is missing.\n"
-                    if observation not in self.missing_observations:
+                    if observation_detail['missing']['counter'] >= observation_detail['missing']['count']:
+                        title = f"Unexpected value for {observation}."
+                        msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} is missing.\n"
+                        #if observation not in self.missing_observations:
                         self.missing_observations[observation] = {}
                         self.missing_observations[observation]['missing_time'] = now
 
