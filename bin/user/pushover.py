@@ -249,7 +249,7 @@ class Pushover(StdService):
         return msg
 
     def _process_data(self, data, observations):
-        log.debug("Processing record: %s", data)
+        #log.debug("Processing record: %s", data)
         msgs = {}
         now = time.time()
         for obs, observation_detail in observations.items():
@@ -283,10 +283,10 @@ class Pushover(StdService):
                 log.debug("Processing missing for %s", observation)
                 time_delta = now - observation_detail['missing']['last_sent_timestamp']
                 log.debug("  Time delta is %s and threshold is %s for %s", time_delta, observation_detail['missing']['wait_time'], observation)
+                log.debug("  Running count is %s and threshold is %s for %s", observation_detail['missing']['counter'], observation_detail['missing']['count'], observation)
 
+                observation_detail['missing']['counter'] += 1
                 if  time_delta >= observation_detail['missing']['wait_time']:
-                    observation_detail['missing']['counter'] += 1
-                    log.debug("  Running count is %s and threshold is %s for %s", observation_detail['missing']['counter'], observation_detail['missing']['count'], observation)
 
                     # ToDo: check running count
                     if observation_detail['missing']['counter'] >= observation_detail['missing']['count']:
