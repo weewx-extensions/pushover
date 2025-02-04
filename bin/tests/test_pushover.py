@@ -16,6 +16,7 @@ def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)]) # pylint: disable=unused-variable
 observation = random_string()
 label = random_string()
+name = observation
 
 CONFIG_DICT = \
 f"""
@@ -29,7 +30,6 @@ f"""
 
 class TestObservationMissing(unittest.TestCase):
     def tests_observation_missing_at_startup(self):
-        print("one")
         mock_engine = mock.Mock()
         config = configobj.ConfigObj(io.StringIO(CONFIG_DICT))
 
@@ -44,17 +44,14 @@ class TestObservationMissing(unittest.TestCase):
                                           SUT.archive_observations[observation]['name'],
                                           SUT.archive_observations[observation]['label'],
                                           SUT.archive_observations[observation]['missing'])
-        print(msg)
 
-        print("done")
+        self.assertEqual(msg, f"{name} ({label}) is missing.\n")
+        self.assertIn(observation, SUT.missing_observations)
+        self.assertIn('missing_time', SUT.missing_observations[observation])
 
 if __name__ == '__main__':
-    print("start")
-
     test_suite = unittest.TestSuite()
     test_suite.addTest(TestObservationMissing('tests_observation_missing_at_startup'))
     unittest.TextTestRunner().run(test_suite)
 
     #unittest.main(exit=False)
-
-    print("done")
