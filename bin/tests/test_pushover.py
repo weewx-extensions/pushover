@@ -7,11 +7,24 @@ import mock
 
 import configobj
 import io
+import random
+import string
 
 from user.pushover import Pushover
 
+def random_string(length=32):
+    return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)]) # pylint: disable=unused-variable
+observation = random_string()
+label = random_string()
+
 CONFIG_DICT = \
-"""
+f"""
+[Pushover]
+    [[archive]]
+        [[[{observation}]]]
+           label = {label}
+           [[[[missing]]]]
+               wait_time = 7200
 """
 
 class TestObservationMissing(unittest.TestCase):
@@ -20,16 +33,17 @@ class TestObservationMissing(unittest.TestCase):
         mock_engine = mock.Mock()
         config = configobj.ConfigObj(io.StringIO(CONFIG_DICT))
 
-        observation_detail = {'last_sent_timestamp': 0,
-                              'wait_time': 0,
-                              'counter': 0,
-                              'count': 0,}
-
         SUT = Pushover(mock_engine, config)
-        msg = SUT.check_missing_value('outTemp8',
-                                      'outTemp8',
-                                      'label for outTemp8',
-                                      observation_detail)
+
+        with mock.patch('user.pushover.log') as mock_logger:
+            mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg %args)
+            mock_logger.info = lambda msg, *args: print("INFO:  " + msg %args)
+            mock_logger.error = lambda msg, *args: print("ERROR: " + msg %args)
+
+            msg = SUT.check_missing_value(observation,
+                                          SUT.archive_observations[observation]['name'],
+                                          SUT.archive_observations[observation]['label'],
+                                          SUT.archive_observations[observation]['missing'])
         print(msg)
 
         print("done")
