@@ -248,6 +248,26 @@ class Pushover(StdService):
 
         return msg
 
+    def check_missing_value(self, observation, name, label, observation_detail):
+        ''' Check if a value has gone missing.'''
+        log.debug("Processing missing for %s", observation)
+        now = time.time()
+        time_delta = now - observation_detail['last_sent_timestamp']
+        log.debug("  Time delta is %s, threshold is %s, and last sent is %s for %s", time_delta, observation_detail['wait_time'], observation_detail['last_sent_timestamp'], observation)
+        log.debug("  Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], observation)
+
+        observation_detail['counter'] += 1
+        msg = ''
+        if  time_delta >= observation_detail['wait_time']:
+            # ToDo: check running count
+            if observation_detail['counter'] >= observation_detail['count']:
+                #if observation not in self.missing_observations:
+                self.missing_observations[observation] = {}
+                self.missing_observations[observation]['missing_time'] = now
+                msg = f"{name}{label} is missing.\n"
+
+        return msg
+
     def _process_data(self, data, observations):
         #log.debug("Processing record: %s", data)
         msgs = {}
@@ -280,21 +300,9 @@ class Pushover(StdService):
                         title = f"Unexpected value for {observation}."
 
             if observation not in data and observation_detail.get('missing', None):
-                log.debug("Processing missing for %s", observation)
-                time_delta = now - observation_detail['missing']['last_sent_timestamp']
-                log.debug("  Time delta is %s, threshold is %s, and last sent is %s for %s", time_delta, observation_detail['missing']['wait_time'], observation_detail['missing']['last_sent_timestamp'], observation)
-                log.debug("  Running count is %s and threshold is %s for %s", observation_detail['missing']['counter'], observation_detail['missing']['count'], observation)
-
-                observation_detail['missing']['counter'] += 1
-                if  time_delta >= observation_detail['missing']['wait_time']:
-
-                    # ToDo: check running count
-                    if observation_detail['missing']['counter'] >= observation_detail['missing']['count']:
-                        title = f"Unexpected value for {observation}."
-                        msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} is missing.\n"
-                        #if observation not in self.missing_observations:
-                        self.missing_observations[observation] = {}
-                        self.missing_observations[observation]['missing_time'] = now
+                msgs['missing'] = self.check_missing_value(observation, observation_detail['name'], observation_detail['label'], observation_detail['missing'])
+                if msgs['missing']:
+                    title = f"Unexpected value for {observation}."
 
             if title:
                 if self.log:
