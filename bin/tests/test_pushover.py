@@ -6,7 +6,6 @@ import unittest
 import mock
 
 import configobj
-import io
 import random
 import string
 
@@ -14,24 +13,40 @@ from user.pushover import Pushover
 
 def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)]) # pylint: disable=unused-variable
-observation = random_string()
-label = random_string()
-name = observation
-
-CONFIG_DICT = \
-f"""
-[Pushover]
-    [[archive]]
-        [[[{observation}]]]
-           label = {label}
-           [[[[missing]]]]
-               wait_time = 7200
-"""
 
 class TestObservationMissing(unittest.TestCase):
+    def setup_config_dict(self, binding, observation, label=None, name=None):
+        config_dict = {
+            'Pushover':
+            {
+                binding:
+                {
+                    observation:
+                    {
+                        'missing':
+                        {
+                            'wait_time': 7200
+                        }
+                    }
+                }
+            }
+        }
+
+        if label:
+            config_dict['Pushover'][binding][observation]['label'] = label
+        if name:
+            config_dict['Pushover'][binding][observation]['weewx_name'] = name
+
+        return config_dict
+
     def tests_observation_missing_at_startup(self):
         mock_engine = mock.Mock()
-        config = configobj.ConfigObj(io.StringIO(CONFIG_DICT))
+
+        observation = random_string()
+        label = random_string()
+        name = observation
+        config_dict = self.setup_config_dict('archive', observation, label)
+        config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
 
@@ -50,8 +65,8 @@ class TestObservationMissing(unittest.TestCase):
         self.assertIn('missing_time', SUT.missing_observations[observation])
 
 if __name__ == '__main__':
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(TestObservationMissing('tests_observation_missing_at_startup'))
-    unittest.TextTestRunner().run(test_suite)
+    #test_suite = unittest.TestSuite()
+    #test_suite.addTest(TestObservationMissing('tests_observation_missing_at_startup'))
+    #unittest.TextTestRunner().run(test_suite)
 
-    #unittest.main(exit=False)
+    unittest.main(exit=False)
