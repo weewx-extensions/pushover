@@ -259,8 +259,7 @@ class Pushover(StdService):
         observation_detail['counter'] += 1
         msg = ''
         if  time_delta >= observation_detail['wait_time']:
-            # ToDo: check running count
-            if observation_detail['counter'] >= observation_detail['count']:
+            if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
                 #if observation not in self.missing_observations:
                 self.missing_observations[observation] = {}
                 self.missing_observations[observation]['missing_time'] = now
