@@ -282,7 +282,7 @@ class Pushover(StdService):
             if observation not in data and observation_detail.get('missing', None):
                 log.debug("Processing missing for %s", observation)
                 time_delta = now - observation_detail['missing']['last_sent_timestamp']
-                log.debug("  Time delta is %s and threshold is %s for %s", time_delta, observation_detail['missing']['wait_time'], observation)
+                log.debug("  Time delta is %s, threshold is %s, and last sent is %s for %s", time_delta, observation_detail['missing']['wait_time'], observation_detail['missing']['last_sent_timestamp'], observation)
                 log.debug("  Running count is %s and threshold is %s for %s", observation_detail['missing']['counter'], observation_detail['missing']['count'], observation)
 
                 observation_detail['missing']['counter'] += 1
