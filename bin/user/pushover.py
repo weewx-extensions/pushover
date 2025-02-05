@@ -143,6 +143,8 @@ class Pushover(StdService):
                 observation[value_type] = {}
                 if value_type != 'missing':
                     observation[value_type]['value'] = int(config[value_type]['value'])
+                else:
+                    observation['returned'] = {}
                 observation[value_type]['count'] = int(config[value_type].get('count', count))
                 observation[value_type]['wait_time'] = to_int(config[value_type].get('wait_time', wait_time))
                 observation[value_type]['last_sent_timestamp'] = 0
@@ -267,14 +269,16 @@ class Pushover(StdService):
 
         return msg
 
-    def check_value_returned(self, observation, name, label, value):
+    def check_value_returned(self, observation, name, label, observation_detail, value):
         ''' Check if a notification should be sent when a missing value has returned. '''
-        # ToDo: I think this needs work
         msg = ''
         if observation in self.missing_observations:
-            #observation_detail['missing']['counter'] = 0
-            msg = f"{name}{label} missing at {self.missing_observations[observation]['missing_time']} has returned with value {value}.\n"
             del self.missing_observations[observation]
+            observation_detail['counter'] = 0
+            # Setting to 1 is a hack, this allows the time threshold to be met
+            # But does not short circuit checking the count threshold
+            observation_detail['last_sent_timestamp'] = 0
+            msg = f"{name}{label} missing at {self.missing_observations[observation]['missing_time']} has returned with value {value}.\n"
         return msg
 
     def _process_data(self, data, observations):
@@ -290,8 +294,8 @@ class Pushover(StdService):
                 # This means that if an observation 'goes missing', it needs a value that is not None to be marked as 'back'
                 if observation_detail.get('missing', None):
                     # ToDo: I think it needs to be different than msgs['missing']
-                    msgs['missing'] = self.check_value_returned(observation, observation_detail['name'], observation_detail['label'], data[observation])
-                    if msgs['missing']:
+                    msgs['returned'] = self.check_value_returned(observation, observation_detail['name'], observation_detail['label'], observation_detail['missing'], data[observation])
+                    if msgs['returned']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail.get('min', None):
                     msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['label'], observation_detail['min'], data[observation])
