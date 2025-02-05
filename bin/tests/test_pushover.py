@@ -16,7 +16,13 @@ def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)]) # pylint: disable=unused-variable
 
 class TestObservationMissing(unittest.TestCase):
-    def setup_config_dict(self, binding, observation, label=None, name=None, count=10, wait_time=3600):
+    def setup_config_dict(self,
+                          binding,
+                          observation,
+                          label=None,
+                          name=None,
+                          count=10,
+                          wait_time=3600):
         config_dict = {
             'Pushover':
             {
@@ -84,7 +90,7 @@ class TestObservationMissing(unittest.TestCase):
             mock_logger.error = lambda msg, *args: print("ERROR: " + msg %args)
 
             # Missing notification has been 'sent'.
-            # Setting to 1, ensures that time threshold has passed since the notification was 'sent'.
+            # Setting to 1, ensures that time threshold has been met.
             SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
             # Setting to ensure that count threshold has been met.
             SUT.archive_observations[observation]['missing']['counter'] = count - 1
@@ -103,7 +109,6 @@ class TestObservationMissing(unittest.TestCase):
 
         observation = random_string()
         label = random_string()
-        name = observation
         count = 10 # To do make random int
         config_dict = self.setup_config_dict('archive', observation, label, count=count)
         config = configobj.ConfigObj(config_dict)
@@ -116,9 +121,9 @@ class TestObservationMissing(unittest.TestCase):
             mock_logger.error = lambda msg, *args: print("ERROR: " + msg %args)
 
             # Missing notification has been 'sent'.
-            # Setting to 1, ensures that time threshold has passed since the notification was 'sent'.
+            # Setting to 1, ensures that time threshold has been met.
             SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
-            # Setting to ensure that count threshold has not been met.
+            # Setting to ensure that count threshold has NOT been met.
             SUT.archive_observations[observation]['missing']['counter'] = 0
 
             msg = SUT.check_missing_value(observation,
@@ -134,9 +139,8 @@ class TestObservationMissing(unittest.TestCase):
 
         observation = random_string()
         label = random_string()
-        name = observation
         count = 10 # To do make random int
-        config_dict = self.setup_config_dict('archive', observation, label, count=count)        
+        config_dict = self.setup_config_dict('archive', observation, label, count=count)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -147,7 +151,7 @@ class TestObservationMissing(unittest.TestCase):
             mock_logger.error = lambda msg, *args: print("ERROR: " + msg %args)
 
             # Missing notification has been 'sent'.
-            # Setting to 1, ensures that time threshold has NOT passed since the notification was 'sent'.
+            # Setting to 1, ensures that time threshold has NOT been met.
             SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = time.time()
             # Setting to ensure that count threshold has been met.
             SUT.archive_observations[observation]['missing']['counter'] = count - 1
