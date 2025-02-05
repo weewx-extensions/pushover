@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2023 Rich Bell <bellrichm@gmail.com>
+#    Copyright (c) 2023 - 2025 Rich Bell <bellrichm@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -11,7 +11,7 @@ import configobj
 
 from weecfg.extension import ExtensionInstaller
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 
 EXTENSION_CONFIG = """
 [Pushover]
