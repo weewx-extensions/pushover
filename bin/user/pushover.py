@@ -279,8 +279,9 @@ class Pushover(StdService):
             # Setting to 1 is a hack, this allows the time threshold to be met
             # But does not short circuit checking the count threshold
             observation_detail['last_sent_timestamp'] = 0
-            del self.missing_observations[observation]
             msg = f"{name}{label} missing at {self.missing_observations[observation]['missing_time']} has returned with value {value}.\n"
+        
+            del self.missing_observations[observation]
         return msg
 
     def _process_data(self, data, observations):
