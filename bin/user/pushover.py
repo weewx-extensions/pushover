@@ -206,7 +206,7 @@ class Pushover(StdService):
                           exception.pos, exception.lineno, exception.colno, obs)
 
     def _check_min_value(self, name, label, observation_detail, value):
-        log.debug("  Min check if %s is less than %s for %s", value, observation_detail['value'], name)
+        log.debug("  Min check if %s is less than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("  Time delta is %s and threshold is %s for %s", time_delta, observation_detail['wait_time'], name)
 
@@ -214,14 +214,14 @@ class Pushover(StdService):
         if  time_delta >= observation_detail['wait_time']:
             if value < observation_detail['value']:
                 observation_detail['counter'] += 1
-                log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
+                log.debug("  Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
 
         return msg
 
     def _check_max_value(self, name, label, observation_detail, value):
-        log.debug("  Max check if %s is greater than %s for %s", value, observation_detail['value'], name)
+        log.debug("  Max check if %s is greater than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("  Time delta is %s and threshold is %s for %s", time_delta, observation_detail['wait_time'], name)
 
@@ -229,14 +229,14 @@ class Pushover(StdService):
         if  time_delta >= observation_detail['wait_time']:
             if value > observation_detail['value']:
                 observation_detail['counter'] += 1
-                log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
+                log.debug(". Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is greater than {observation_detail['value']}.\n"
 
         return msg
 
     def _check_equal_value(self, name, label, observation_detail, value):
-        log.debug("  Equal check if %s is equal to %s for %s", value, observation_detail['value'], name)
+        log.debug("  Equal check if %s is equal to %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("  Time delta is %s and threshold is %s for %s", time_delta, observation_detail['wait_time'], name)
 
@@ -244,7 +244,7 @@ class Pushover(StdService):
         if  time_delta >= observation_detail['wait_time']:
             if value != observation_detail['value']:
                 observation_detail['counter'] += 1
-                log.debug("Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
+                log.debug("  Running count is %s and threshold is %s for %s", observation_detail['counter'], observation_detail['count'], name)
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is equal to {observation_detail['value']}.\n"
 
@@ -252,7 +252,7 @@ class Pushover(StdService):
 
     def check_missing_value(self, observation, name, label, observation_detail):
         ''' Check if a notification should be sent for a missing value.'''
-        log.debug("Processing missing for %s", observation)
+        log.debug("  Processing missing for %s%s", name, label)
         now = time.time()
         time_delta = now - observation_detail['last_sent_timestamp']
         log.debug("  Time delta is %s, threshold is %s, and last sent is %s for %s", time_delta, observation_detail['wait_time'], observation_detail['last_sent_timestamp'], observation)
@@ -272,6 +272,7 @@ class Pushover(StdService):
     def check_value_returned(self, observation, name, label, observation_detail, value):
         ''' Check if a notification should be sent when a missing value has returned. '''
         # ToDo: I think this needs work - think it is closer
+        log.debug("  Processing returned value for %s%s", name, label)
         msg = ''
         if observation in self.missing_observations:
             observation_detail['counter'] = 0
