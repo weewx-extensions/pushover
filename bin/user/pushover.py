@@ -212,9 +212,9 @@ class Pushover(StdService):
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
 
         msg = ''
-        if  time_delta >= observation_detail['wait_time']:
-            if value < observation_detail['value']:
-                observation_detail['counter'] += 1
+        if value < observation_detail['value']:
+            observation_detail['counter'] += 1
+            if  time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
 
@@ -227,9 +227,9 @@ class Pushover(StdService):
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
 
         msg = ''
-        if  time_delta >= observation_detail['wait_time']:
-            if value > observation_detail['value']:
-                observation_detail['counter'] += 1
+        if value > observation_detail['value']:
+            observation_detail['counter'] += 1
+            if  time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is greater than {observation_detail['value']}.\n"
 
@@ -242,9 +242,9 @@ class Pushover(StdService):
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
 
         msg = ''
-        if  time_delta >= observation_detail['wait_time']:
-            if value != observation_detail['value']:
-                observation_detail['counter'] += 1
+        if value != observation_detail['value']:
+            observation_detail['counter'] += 1
+            if  time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is equal to {observation_detail['value']}.\n"
 
