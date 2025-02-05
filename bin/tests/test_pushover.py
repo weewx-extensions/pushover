@@ -66,7 +66,7 @@ class TestObservationMissing(unittest.TestCase):
         self.assertIn(observation, SUT.missing_observations)
         self.assertIn('missing_time', SUT.missing_observations[observation])
 
-    def test_past_time_threshould_past_count_threshold(self):
+    def test_past_time_threshold_past_count_threshold(self):
         mock_engine = mock.Mock()
 
         observation = random_string()
@@ -86,7 +86,7 @@ class TestObservationMissing(unittest.TestCase):
             # Missing notification has been 'sent'.
             # Setting to 1, ensures that time threshold has passed since the notification was 'sent'.
             SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
-            # Setting to ensure that count threshould has been met.
+            # Setting to ensure that count threshold has been met.
             SUT.archive_observations[observation]['missing']['counter'] = count - 1
 
             msg = SUT.check_missing_value(observation,
@@ -97,6 +97,68 @@ class TestObservationMissing(unittest.TestCase):
             self.assertEqual(msg, f"{name} ({label}) is missing.\n")
             self.assertIn(observation, SUT.missing_observations)
             self.assertIn('missing_time', SUT.missing_observations[observation])
+
+    def test_past_time_threshold(self):
+        mock_engine = mock.Mock()
+
+        observation = random_string()
+        label = random_string()
+        name = observation
+        count = 10 # To do make random int
+        config_dict = self.setup_config_dict('archive', observation, label, count=count)
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        with mock.patch('user.pushover.log') as mock_logger:
+            mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg %args)
+            mock_logger.info = lambda msg, *args: print("INFO:  " + msg %args)
+            mock_logger.error = lambda msg, *args: print("ERROR: " + msg %args)
+
+            # Missing notification has been 'sent'.
+            # Setting to 1, ensures that time threshold has passed since the notification was 'sent'.
+            SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
+            # Setting to ensure that count threshold has not been met.
+            SUT.archive_observations[observation]['missing']['counter'] = 0
+
+            msg = SUT.check_missing_value(observation,
+                                          SUT.archive_observations[observation]['name'],
+                                          SUT.archive_observations[observation]['label'],
+                                          SUT.archive_observations[observation]['missing'])
+
+            self.assertEqual(msg, "")
+            self.assertEqual(len(SUT.missing_observations), 0)
+
+    def test_past_count_threshold(self):
+        mock_engine = mock.Mock()
+
+        observation = random_string()
+        label = random_string()
+        name = observation
+        count = 10 # To do make random int
+        config_dict = self.setup_config_dict('archive', observation, label, count=count)        
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        with mock.patch('user.pushover.log') as mock_logger:
+            mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg %args)
+            mock_logger.info = lambda msg, *args: print("INFO:  " + msg %args)
+            mock_logger.error = lambda msg, *args: print("ERROR: " + msg %args)
+
+            # Missing notification has been 'sent'.
+            # Setting to 1, ensures that time threshold has NOT passed since the notification was 'sent'.
+            SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = time.time()
+            # Setting to ensure that count threshold has been met.
+            SUT.archive_observations[observation]['missing']['counter'] = count - 1
+
+            msg = SUT.check_missing_value(observation,
+                                          SUT.archive_observations[observation]['name'],
+                                          SUT.archive_observations[observation]['label'],
+                                          SUT.archive_observations[observation]['missing'])
+
+            self.assertEqual(msg, "")
+            self.assertEqual(len(SUT.missing_observations), 0)
 
 if __name__ == '__main__':
     #test_suite = unittest.TestSuite()
