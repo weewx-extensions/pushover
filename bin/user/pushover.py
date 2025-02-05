@@ -267,6 +267,16 @@ class Pushover(StdService):
 
         return msg
 
+    def check_value_returned(self, observation, name, label, value):
+        ''' Check if a notification should be sent when a missing value has returned. '''
+        # ToDo: I think this needs work
+        msg = ''
+        if observation in self.missing_observations:
+            #observation_detail['missing']['counter'] = 0
+            msg = f"{name}{label} missing at {self.missing_observations[observation]['missing_time']} has returned with value {value}.\n"
+            del self.missing_observations[observation]
+        return msg
+
     def _process_data(self, data, observations):
         #log.debug("Processing record: %s", data)
         msgs = {}
@@ -279,12 +289,10 @@ class Pushover(StdService):
                 log.debug("Processing observation: %s", observation)
                 # This means that if an observation 'goes missing', it needs a value that is not None to be marked as 'back'
                 if observation_detail.get('missing', None):
-                    if observation in self.missing_observations:
-                        #observation_detail['missing']['counter'] = 0
+                    # ToDo: I think it needs to be different than msgs['missing']
+                    msgs['missing'] = self.check_value_returned(observation, observation_detail['name'], observation_detail['label'], data[observation])
+                    if msgs['missing']:
                         title = f"Unexpected value for {observation}."
-                        msgs['missing'] = f"{observation_detail['name']}{observation_detail['label']} missing at {self.missing_observations[observation]['missing_time']} has returned with value {data[observation]}.\n"
-                        del self.missing_observations[observation]
-
                 if observation_detail.get('min', None):
                     msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['label'], observation_detail['min'], data[observation])
                     if msgs['min']:
