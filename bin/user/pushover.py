@@ -249,7 +249,7 @@ class Pushover(StdService):
         return msg
 
     def check_missing_value(self, observation, name, label, observation_detail):
-        ''' Check if a value has gone missing.'''
+        ''' Check if a notification should be sent for a missing value.'''
         log.debug("Processing missing for %s", observation)
         now = time.time()
         time_delta = now - observation_detail['last_sent_timestamp']
