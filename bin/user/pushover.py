@@ -209,12 +209,12 @@ class Pushover(StdService):
         log.debug("  Min check if %s is less than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
+        log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
 
         msg = ''
         if  time_delta >= observation_detail['wait_time']:
             if value < observation_detail['value']:
                 observation_detail['counter'] += 1
-                log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
 
@@ -224,12 +224,12 @@ class Pushover(StdService):
         log.debug("  Max check if %s is greater than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
+        log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
 
         msg = ''
         if  time_delta >= observation_detail['wait_time']:
             if value > observation_detail['value']:
                 observation_detail['counter'] += 1
-                log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is greater than {observation_detail['value']}.\n"
 
@@ -239,12 +239,12 @@ class Pushover(StdService):
         log.debug("  Equal check if %s is equal to %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
+        log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
 
         msg = ''
         if  time_delta >= observation_detail['wait_time']:
             if value != observation_detail['value']:
                 observation_detail['counter'] += 1
-                log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is equal to {observation_detail['value']}.\n"
 
