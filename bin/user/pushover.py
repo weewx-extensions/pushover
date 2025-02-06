@@ -258,13 +258,14 @@ class Pushover(StdService):
         log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s", time_delta, observation_detail['wait_time'], observation_detail['last_sent_timestamp'], observation, label)
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], observation, label)
 
+        if observation not in self.missing_observations:
+            self.missing_observations[observation] = {}
+            self.missing_observations[observation]['missing_time'] = now
+
         observation_detail['counter'] += 1
         msg = ''
         if  time_delta >= observation_detail['wait_time']:
             if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
-                #if observation not in self.missing_observations:
-                self.missing_observations[observation] = {}
-                self.missing_observations[observation]['missing_time'] = now
                 msg = f"{name}{label} is missing with a count of {observation_detail['counter']}.\n"
 
         return msg
