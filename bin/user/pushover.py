@@ -265,7 +265,7 @@ class Pushover(StdService):
                 #if observation not in self.missing_observations:
                 self.missing_observations[observation] = {}
                 self.missing_observations[observation]['missing_time'] = now
-                msg = f"{name}{label} is missing.\n"
+                msg = f"{name}{label} is missing with a count of {observation_detail['counter']}.\n"
 
         return msg
 

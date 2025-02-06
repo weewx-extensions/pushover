@@ -68,7 +68,7 @@ class TestObservationMissing(unittest.TestCase):
                                           SUT.archive_observations[observation]['label'],
                                           SUT.archive_observations[observation]['missing'])
 
-        self.assertEqual(msg, f"{name} ({label}) is missing.\n")
+        self.assertEqual(msg, f"{name} ({label}) is missing with a count of 1.\n")
         self.assertIn(observation, SUT.missing_observations)
         self.assertIn('missing_time', SUT.missing_observations[observation])
 
@@ -100,7 +100,7 @@ class TestObservationMissing(unittest.TestCase):
                                           SUT.archive_observations[observation]['label'],
                                           SUT.archive_observations[observation]['missing'])
 
-            self.assertEqual(msg, f"{name} ({label}) is missing.\n")
+            self.assertEqual(msg, f"{name} ({label}) is missing with a count of {count}.\n")
             self.assertIn(observation, SUT.missing_observations)
             self.assertIn('missing_time', SUT.missing_observations[observation])
 
