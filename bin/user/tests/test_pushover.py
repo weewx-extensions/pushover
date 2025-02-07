@@ -132,7 +132,7 @@ class TestObservationMissing(unittest.TestCase):
                                           SUT.archive_observations[observation]['missing'])
 
             self.assertEqual(msg, "")
-            self.assertEqual(len(SUT.missing_observations), 0)
+            self.assertIn(observation, SUT.missing_observations)
 
     def test_past_count_threshold(self):
         mock_engine = mock.Mock()
@@ -162,7 +162,7 @@ class TestObservationMissing(unittest.TestCase):
                                           SUT.archive_observations[observation]['missing'])
 
             self.assertEqual(msg, "")
-            self.assertEqual(len(SUT.missing_observations), 0)
+            self.assertIn(observation, SUT.missing_observations)
 
 if __name__ == '__main__':
     #test_suite = unittest.TestSuite()
