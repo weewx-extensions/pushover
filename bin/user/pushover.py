@@ -261,12 +261,14 @@ class Pushover(StdService):
         if observation not in self.missing_observations:
             self.missing_observations[observation] = {}
             self.missing_observations[observation]['missing_time'] = now
+            self.missing_observations[observation]['notification_count'] = 0
 
         observation_detail['counter'] += 1
         msg = ''
         if  time_delta >= observation_detail['wait_time']:
             if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
                 msg = f"{name}{label} is missing with a count of {observation_detail['counter']}.\n"
+                self.missing_observations[observation]['notification_count'] += 1
 
         return msg
 
@@ -280,12 +282,14 @@ class Pushover(StdService):
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], observation, label)
         msg = ''
         if observation in self.missing_observations:
-            msg = f"{name}{label} missing at {self.missing_observations[observation]['missing_time']} has returned with value {value}.\n"
+            if self.missing_observations[observation]['notification_count'] > 0:
+                msg = f"{name}{label} missing at {self.missing_observations[observation]['missing_time']} has returned with value {value}.\n"
+            else:
+                log.debug("    No notifcations had been sent for %s%s missing at %s and count of %s.", name, label,self.missing_observations[observation]['missing_time'], observation_detail['counter'])
             observation_detail['counter'] = 0
             # Setting to 1 is a hack, this allows the time threshold to be met
             # But does not short circuit checking the count threshold
             observation_detail['last_sent_timestamp'] = 1
-            msg = f"{name}{label} missing at {self.missing_observations[observation]['missing_time']} has returned with value {value} count of {observation_detail['counter']}.\n"
 
             del self.missing_observations[observation]
         return msg
