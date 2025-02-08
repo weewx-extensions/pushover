@@ -432,6 +432,91 @@ class TestObservationMaxCheck(unittest.TestCase):
 
         self.assertEqual(msg, f"{name}{label} value {record_value} is greater than {value}.\n")
 
+class TestObservationMinCheck(unittest.TestCase):
+    def test_observation_not_greater(self):
+        mock_engine = mock.Mock()
+
+        binding = 'archive'
+        observation = random_string()
+        label = f' {random_string()}'
+        name = observation
+        value = 99 # ToDo: make random int
+
+        config_dict = setup_config_dict(binding,
+                                        observation,
+                                        'equal',
+                                        label=label,
+                                        name=name,
+                                        value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        msg = SUT._check_min_value(name,
+                                     label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      value)
+
+        self.assertEqual(msg, "")
+
+    def test_observation_less_no_notification(self):
+        mock_engine = mock.Mock()
+
+        binding = 'archive'
+        observation = random_string()
+        label = f' {random_string()}'
+        name = observation
+        value = 99 # ToDo: make random int
+        record_value = 55 # ToDo: make random int
+
+        config_dict = setup_config_dict(binding,
+                                        observation,
+                                        'equal',
+                                        label=label,
+                                        name=name,
+                                        value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        msg = SUT._check_min_value(name,
+                                     label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      record_value)
+
+        self.assertEqual(msg, "")
+
+    def test_observation_less_with_notification(self):
+        mock_engine = mock.Mock()
+
+        binding = 'archive'
+        observation = random_string()
+        label = f' {random_string()}'
+        name = observation
+        value = 99 # ToDo: make random int
+        record_value = 55 # ToDo: make random int
+
+        config_dict = setup_config_dict(binding,
+                                        observation,
+                                        'equal',
+                                        label=label,
+                                        name=name,
+                                        value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        SUT.archive_observations[observation]['equal']['counter'] = \
+            SUT.archive_observations[observation]['equal']['count'] + 1
+
+        msg = SUT._check_min_value(name,
+                                     label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      record_value)
+
+
+        self.assertEqual(msg, f"{name}{label} value {record_value} is less than {value}.\n")
+
 if __name__ == '__main__':
     #test_suite = unittest.TestSuite()
     #test_suite.addTest(TestObservationMissing('tests_observation_missing_at_startup'))
