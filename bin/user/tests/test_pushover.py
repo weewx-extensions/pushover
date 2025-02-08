@@ -46,44 +46,13 @@ def setup_config_dict(binding,
     return config_dict
 
 class TestObservationMissing(unittest.TestCase):
-    def setup_config_dict(self,
-                          binding,
-                          observation,
-                          label=None,
-                          name=None,
-                          count=10,
-                          wait_time=3600):
-        config_dict = {
-            'Pushover':
-            {
-                binding:
-                {
-                    observation:
-                    {
-                        'missing':
-                        {
-                            'count': count,
-                            'wait_time': wait_time,
-                        }
-                    }
-                }
-            }
-        }
-
-        if label:
-            config_dict['Pushover'][binding][observation]['label'] = label
-        if name:
-            config_dict['Pushover'][binding][observation]['weewx_name'] = name
-
-        return config_dict
-
     def test_at_startup(self):
         mock_engine = mock.Mock()
 
         observation = random_string()
         label = random_string()
         name = observation
-        config_dict = self.setup_config_dict('archive', observation, label)
+        config_dict = setup_config_dict('archive', observation, label)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -109,7 +78,7 @@ class TestObservationMissing(unittest.TestCase):
         label = random_string()
         name = observation
         count = 10 # To do make random int
-        config_dict = self.setup_config_dict('archive', observation, label, count=count)
+        config_dict = setup_config_dict('archive', observation, label, count=count)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -140,7 +109,7 @@ class TestObservationMissing(unittest.TestCase):
         observation = random_string()
         label = random_string()
         count = 10 # To do make random int
-        config_dict = self.setup_config_dict('archive', observation, label, count=count)
+        config_dict = setup_config_dict('archive', observation, label, count=count)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -170,7 +139,7 @@ class TestObservationMissing(unittest.TestCase):
         observation = random_string()
         label = random_string()
         count = 10 # To do make random int
-        config_dict = self.setup_config_dict('archive', observation, label, count=count)
+        config_dict = setup_config_dict('archive', observation, label, count=count)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
