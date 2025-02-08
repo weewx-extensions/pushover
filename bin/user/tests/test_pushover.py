@@ -1,3 +1,11 @@
+#
+#    Copyright (c) 2025 Rich Bell <bellrichm@gmail.com>
+#
+#    See the file LICENSE.txt for your full rights.
+#
+
+# pylint: disable=fixme
+
 # pylint: disable=wrong-import-order
 # pylint: disable=missing-docstring
 # pylint: disable=invalid-name
@@ -251,7 +259,8 @@ class TestObservationReturned(unittest.TestCase):
                                        value)
 
         self.assertEqual(msg,
-                        f"{name}{label} returned at {now} after missing for 0 with value {value}.\n")
+                        (f"{name}{label} returned at {now} "
+                         f"after missing for 0 with value {value}.\n"))
 
 class TestObservationEqualCheck(unittest.TestCase):
     def test_observation_equal(self):
@@ -263,17 +272,22 @@ class TestObservationEqualCheck(unittest.TestCase):
         name = observation
         value = 99 # ToDo: make random int
 
-        config_dict = setup_config_dict(binding, observation, 'equal', label=label, name=name, value=value)
+        config_dict = setup_config_dict(binding,
+                                        observation,
+                                        'equal',
+                                        label=label,
+                                        name=name,
+                                        value=value)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
 
-        msg = SUT._check_equal_value(name,
+        msg = SUT.check_equal_value(name,
                                      label,
                                       SUT.archive_observations[observation]['equal'],
                                       value)
 
-        print(msg)
+        self.assertEqual(msg, "")
 
 if __name__ == '__main__':
     #test_suite = unittest.TestSuite()
