@@ -19,6 +19,7 @@ import string
 import time
 
 from user.pushover import Pushover
+from weeutil.weeutil import timestamp_to_string
 
 def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)]) # pylint: disable=unused-variable
@@ -259,8 +260,8 @@ class TestObservationReturned(unittest.TestCase):
                                        value)
 
         self.assertEqual(msg,
-                        (f"{name}{label} returned at {now} "
-                         f"after missing for 0 with value {value}.\n"))
+                        (f"{name}{label} missing at {timestamp_to_string(now)} "
+                         f"returned after missing for 0 with value {value}.\n"))
 
 class TestObservationEqualCheck(unittest.TestCase):
     def test_observation_equal(self):

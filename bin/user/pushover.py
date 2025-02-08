@@ -71,7 +71,7 @@ import configobj
 
 import weewx
 from weewx.engine import StdService
-from weeutil.weeutil import to_bool, to_int
+from weeutil.weeutil import timestamp_to_string, to_bool, to_int
 
 log = logging.getLogger(__name__)
 
@@ -292,9 +292,9 @@ class Pushover(StdService):
         msg = ''
         if observation in self.missing_observations:
             if self.missing_observations[observation]['notification_count'] > 0:
-                msg = f"{name}{label} returned at {self.missing_observations[observation]['missing_time']} after missing for {observation_detail['counter']} with value {value}.\n"
+                msg = f"{name}{label} missing at {timestamp_to_string(self.missing_observations[observation]['missing_time'])} returned after missing for {observation_detail['counter']} with value {value}.\n"
             else:
-                log.debug("    No notifcations had been sent for returning %s%s gone missing at %s and count of %s.", name, label,self.missing_observations[observation]['missing_time'], observation_detail['counter'])
+                log.debug("    No notifcations had been sent for returning %s%s gone missing at %s and count of %s.", name, label, timestamp_to_string(self.missing_observations[observation]['missing_time']), observation_detail['counter'])
             observation_detail['counter'] = 0
             # Setting to 1 is a hack, this allows the time threshold to be met
             # But does not short circuit checking the count threshold
@@ -354,13 +354,13 @@ class Pushover(StdService):
         now = int(time.time())
         if self.client_error_timestamp:
             if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
-                log.error("Fatal error occurred at %s, Pushover skipped.", self.client_error_timestamp)
+                log.error("Fatal error occurred at %s, Pushover skipped.", timestamp_to_string(self.client_error_timestamp))
                 self.client_error_last_logged = now
                 return
 
         if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
             log.debug("Server error received at %s, waiting %s seconds before retrying.",
-                      self.server_error_timestamp,
+                      timestamp_to_string(self.server_error_timestamp),
                       self.server_error_wait_period)
             return
         self.server_error_timestamp = 0
@@ -372,13 +372,13 @@ class Pushover(StdService):
         now = int(time.time())
         if self.client_error_timestamp:
             if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
-                log.error("Fatal error occurred at %s, Pushover skipped.", self.client_error_timestamp)
+                log.error("Fatal error occurred at %s, Pushover skipped.", timestamp_to_string(self.client_error_timestamp))
                 self.client_error_last_logged = now
                 return
 
         if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
             log.debug("Server error received at %s, waiting %s seconds before retrying.",
-                      self.server_error_timestamp,
+                      timestamp_to_string(self.server_error_timestamp),
                       self.server_error_wait_period)
             return
         self.server_error_timestamp = 0
