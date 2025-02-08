@@ -15,6 +15,36 @@ from user.pushover import Pushover
 def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)]) # pylint: disable=unused-variable
 
+def setup_config_dict(binding,
+                        observation,
+                        label=None,
+                        name=None,
+                        count=10,
+                        wait_time=3600):
+    config_dict = {
+        'Pushover':
+        {
+            binding:
+            {
+                observation:
+                {
+                    'missing':
+                    {
+                        'count': count,
+                        'wait_time': wait_time,
+                    }
+                }
+            }
+        }
+    }
+
+    if label:
+        config_dict['Pushover'][binding][observation]['label'] = label
+    if name:
+        config_dict['Pushover'][binding][observation]['weewx_name'] = name
+
+    return config_dict
+
 class TestObservationMissing(unittest.TestCase):
     def setup_config_dict(self,
                           binding,
@@ -163,6 +193,92 @@ class TestObservationMissing(unittest.TestCase):
 
             self.assertEqual(msg, "")
             self.assertIn(observation, SUT.missing_observations)
+
+class TestObservationReturned(unittest.TestCase):
+    def test_observation_not_missing(self):
+        mock_engine = mock.Mock()
+
+        binding = 'archive'
+        observation = random_string()
+        label = random_string()
+        name = observation
+        value = 99.9 # ToDo: make random
+
+        config_dict = setup_config_dict(binding, observation, label=label, name=name)
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        SUT.missing_observations = {}
+
+        msg = SUT.check_value_returned(observation,
+                                       name,
+                                       label,
+                                       SUT.archive_observations[observation]['missing'],
+                                       value)
+
+        self.assertEqual(msg, "")
+
+    def test_observation_missing_no_notification(self):
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        binding = 'archive'
+        observation = random_string()
+        label = random_string()
+        name = observation
+        value = 99.9 # ToDo: make random
+
+        config_dict = setup_config_dict(binding, observation, label=label, name=name)
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        SUT.missing_observations = {
+            observation: {
+                'notification_count': 0,
+                'missing_time': now,
+            }
+        }
+
+        msg = SUT.check_value_returned(observation,
+                                       name,
+                                       label,
+                                       SUT.archive_observations[observation]['missing'],
+                                       value)
+
+        self.assertEqual(msg, "")
+
+    def test_observation_missing_with_notification(self):
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        binding = 'archive'
+        observation = random_string()
+        label = f' {random_string()}'
+        name = observation
+        value = 99.9 # ToDo: make random
+
+        config_dict = setup_config_dict(binding, observation, label=label, name=name)
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        SUT.missing_observations = {
+            observation: {
+                'notification_count': 1, # ToDo: randomize, integer greater than 0
+                'missing_time': now,
+            }
+        }
+
+        msg = SUT.check_value_returned(observation,
+                                       name,
+                                       label,
+                                       SUT.archive_observations[observation]['missing'],
+                                       value)
+
+        self.assertEqual(msg,
+                        f"{name}{label} returned at {now} after missing for 0 with value {value}.\n")
 
 if __name__ == '__main__':
     #test_suite = unittest.TestSuite()
