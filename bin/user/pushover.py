@@ -180,7 +180,7 @@ class Pushover(StdService):
                                }),
                             { "Content-type": "application/x-www-form-urlencoded" })
         response = connection.getresponse()
-        now = time.time()
+        now = int(time.time())
         log.debug("Response code is: '%s' for %s", response.code, obs)
 
         if response.code == 200:
@@ -208,8 +208,9 @@ class Pushover(StdService):
     def check_min_value(self, name, label, observation_detail, value):
         ''' Check if an observation is less than a desired value.
             Send a notification if time and cound thresholds have been met. '''
+        now = int(time.time())
         log.debug("  Min check if %s is less than %s for %s%s", value, observation_detail['value'], name, label)
-        time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
+        time_delta = abs(now - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
 
@@ -225,8 +226,9 @@ class Pushover(StdService):
     def check_max_value(self, name, label, observation_detail, value):
         ''' Check if an observation is greater than a desired value.
             Send a notification if time and cound thresholds have been met. '''
+        now = int(time.time())
         log.debug("  Max check if %s is greater than %s for %s%s", value, observation_detail['value'], name, label)
-        time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
+        time_delta = abs(now - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
 
@@ -242,8 +244,9 @@ class Pushover(StdService):
     def check_equal_value(self, name, label, observation_detail, value):
         ''' Check if an observation is not equal to desired value.
             Send a notification if time and cound thresholds have been met. '''
+        now = int(time.time())
         log.debug("  Equal check if %s is equal to %s for %s%s", value, observation_detail['value'], name, label)
-        time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
+        time_delta = abs(now - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
 
@@ -259,7 +262,7 @@ class Pushover(StdService):
     def check_missing_value(self, observation, name, label, observation_detail):
         ''' Check if a notification should be sent for a missing value.'''
         log.debug("  Processing missing for %s%s", name, label)
-        now = time.time()
+        now = int(time.time())
         time_delta = now - observation_detail['last_sent_timestamp']
         log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s", time_delta, observation_detail['wait_time'], observation_detail['last_sent_timestamp'], observation, label)
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], observation, label)
@@ -282,7 +285,7 @@ class Pushover(StdService):
         ''' Check if a notification should be sent when a missing value has returned. '''
         # ToDo: I think this needs work - think it is closer
         log.debug("  Processing returned value for observation %s%s", name, label)
-        now = time.time()
+        now = int(time.time())
         time_delta = now - observation_detail['last_sent_timestamp']
         log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s", time_delta, observation_detail['wait_time'], observation_detail['last_sent_timestamp'], observation, label)
         log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], observation, label)
@@ -303,7 +306,7 @@ class Pushover(StdService):
     def _process_data(self, data, observations):
         #log.debug("Processing record: %s", data)
         msgs = {}
-        now = time.time()
+        now = int(time.time())
         for obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
             title = None
@@ -348,13 +351,14 @@ class Pushover(StdService):
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
+        now = int(time.time())
         if self.client_error_timestamp:
-            if abs(time.time() - self.client_error_last_logged) < self.client_error_log_frequency:
+            if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
                 log.error("Fatal error occurred at %s, Pushover skipped.", self.client_error_timestamp)
-                self.client_error_last_logged = time.time()
+                self.client_error_last_logged = now
                 return
 
-        if abs(time.time() - self.server_error_timestamp) < self.server_error_wait_period:
+        if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
             log.debug("Server error received at %s, waiting %s seconds before retrying.",
                       self.server_error_timestamp,
                       self.server_error_wait_period)
@@ -365,13 +369,14 @@ class Pushover(StdService):
 
     def new_loop_packet(self, event):
         """ Handle the new loop packet event. """
+        now = int(time.time())
         if self.client_error_timestamp:
-            if abs(time.time() - self.client_error_last_logged) < self.client_error_log_frequency:
+            if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
                 log.error("Fatal error occurred at %s, Pushover skipped.", self.client_error_timestamp)
-                self.client_error_last_logged = time.time()
+                self.client_error_last_logged = now
                 return
 
-        if abs(time.time() - self.server_error_timestamp) < self.server_error_wait_period:
+        if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
             log.debug("Server error received at %s, waiting %s seconds before retrying.",
                       self.server_error_timestamp,
                       self.server_error_wait_period)
