@@ -17,10 +17,12 @@ def random_string(length=32):
 
 def setup_config_dict(binding,
                         observation,
+                        check_type,
                         label=None,
                         name=None,
                         count=10,
-                        wait_time=3600):
+                        wait_time=3600,
+                        value=None):
     config_dict = {
         'Pushover':
         {
@@ -28,7 +30,7 @@ def setup_config_dict(binding,
             {
                 observation:
                 {
-                    'missing':
+                    check_type:
                     {
                         'count': count,
                         'wait_time': wait_time,
@@ -42,6 +44,8 @@ def setup_config_dict(binding,
         config_dict['Pushover'][binding][observation]['label'] = label
     if name:
         config_dict['Pushover'][binding][observation]['weewx_name'] = name
+    if value:
+        config_dict['Pushover'][binding][observation][check_type]['value'] = value
 
     return config_dict
 
@@ -52,7 +56,7 @@ class TestObservationMissing(unittest.TestCase):
         observation = random_string()
         label = random_string()
         name = observation
-        config_dict = setup_config_dict('archive', observation, label)
+        config_dict = setup_config_dict('archive', observation, 'missing', label)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -78,7 +82,7 @@ class TestObservationMissing(unittest.TestCase):
         label = random_string()
         name = observation
         count = 10 # To do make random int
-        config_dict = setup_config_dict('archive', observation, label, count=count)
+        config_dict = setup_config_dict('archive', observation, 'missing', label, count=count)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -109,7 +113,7 @@ class TestObservationMissing(unittest.TestCase):
         observation = random_string()
         label = random_string()
         count = 10 # To do make random int
-        config_dict = setup_config_dict('archive', observation, label, count=count)
+        config_dict = setup_config_dict('archive', observation, 'missing', label, count=count)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -139,7 +143,7 @@ class TestObservationMissing(unittest.TestCase):
         observation = random_string()
         label = random_string()
         count = 10 # To do make random int
-        config_dict = setup_config_dict('archive', observation, label, count=count)
+        config_dict = setup_config_dict('archive', observation, 'missing', label, count=count)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -173,7 +177,7 @@ class TestObservationReturned(unittest.TestCase):
         name = observation
         value = 99.9 # ToDo: make random
 
-        config_dict = setup_config_dict(binding, observation, label=label, name=name)
+        config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -198,7 +202,7 @@ class TestObservationReturned(unittest.TestCase):
         name = observation
         value = 99.9 # ToDo: make random
 
-        config_dict = setup_config_dict(binding, observation, label=label, name=name)
+        config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -228,7 +232,7 @@ class TestObservationReturned(unittest.TestCase):
         name = observation
         value = 99.9 # ToDo: make random
 
-        config_dict = setup_config_dict(binding, observation, label=label, name=name)
+        config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
         SUT = Pushover(mock_engine, config)
@@ -248,6 +252,28 @@ class TestObservationReturned(unittest.TestCase):
 
         self.assertEqual(msg,
                         f"{name}{label} returned at {now} after missing for 0 with value {value}.\n")
+
+class TestObservationEqualCheck(unittest.TestCase):
+    def test_observation_equal(self):
+        mock_engine = mock.Mock()
+
+        binding = 'archive'
+        observation = random_string()
+        label = f' {random_string()}'
+        name = observation
+        value = 99 # ToDo: make random int
+
+        config_dict = setup_config_dict(binding, observation, 'equal', label=label, name=name, value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        msg = SUT._check_equal_value(name,
+                                     label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      value)
+
+        print(msg)
 
 if __name__ == '__main__':
     #test_suite = unittest.TestSuite()
