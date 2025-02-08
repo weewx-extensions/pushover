@@ -235,7 +235,9 @@ class Pushover(StdService):
 
         return msg
 
-    def _check_equal_value(self, name, label, observation_detail, value):
+    def check_equal_value(self, name, label, observation_detail, value):
+        ''' Check if an observation is not equal to desired value.
+            Send a notification if time and cound thresholds have been met. '''
         log.debug("  Equal check if %s is equal to %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
@@ -246,7 +248,7 @@ class Pushover(StdService):
             observation_detail['counter'] += 1
             if  time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
-                    msg = f"{name}{label} value {value} is equal to {observation_detail['value']}.\n"
+                    msg = f"{name}{label} value {value} is not equal to {observation_detail['value']}.\n"
 
         return msg
 
@@ -319,7 +321,7 @@ class Pushover(StdService):
                     if msgs['max']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail.get('equal', None):
-                    msgs['equal'] = self._check_equal_value(observation_detail['name'], observation_detail['label'], observation_detail['equal'], data[observation])
+                    msgs['equal'] = self.check_equal_value(observation_detail['name'], observation_detail['label'], observation_detail['equal'], data[observation])
                     if msgs['equal']:
                         title = f"Unexpected value for {observation}."
 
