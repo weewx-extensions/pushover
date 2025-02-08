@@ -205,7 +205,9 @@ class Pushover(StdService):
                 log.error("Error at '%s', line: '%s' column: '%s' for %s",
                           exception.pos, exception.lineno, exception.colno, obs)
 
-    def _check_min_value(self, name, label, observation_detail, value):
+    def check_min_value(self, name, label, observation_detail, value):
+        ''' Check if an observation is less than a desired value.
+            Send a notification if time and cound thresholds have been met. '''
         log.debug("  Min check if %s is less than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
@@ -220,7 +222,9 @@ class Pushover(StdService):
 
         return msg
 
-    def _check_max_value(self, name, label, observation_detail, value):
+    def check_max_value(self, name, label, observation_detail, value):
+        ''' Check if an observation is greater than a desired value.
+            Send a notification if time and cound thresholds have been met. '''
         log.debug("  Max check if %s is greater than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(time.time() - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
@@ -313,11 +317,11 @@ class Pushover(StdService):
                     if msgs['returned']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail.get('min', None):
-                    msgs['min'] = self._check_min_value(observation_detail['name'], observation_detail['label'], observation_detail['min'], data[observation])
+                    msgs['min'] = self.check_min_value(observation_detail['name'], observation_detail['label'], observation_detail['min'], data[observation])
                     if msgs['min']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail.get('max', None):
-                    msgs['max'] = self._check_max_value(observation_detail['name'], observation_detail['label'], observation_detail['max'], data[observation])
+                    msgs['max'] = self.check_max_value(observation_detail['name'], observation_detail['label'], observation_detail['max'], data[observation])
                     if msgs['max']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail.get('equal', None):

@@ -7,5 +7,5 @@
 source ./devtools/python_versions.sh
 
 export PYENV_VERSION=$weewx_default_python_version
+PYTHONPATH=bin:../weewx/src python -m pylint bin/user/tests/test_pushover.py
 PYTHONPATH=bin:../weewx/src python -m pylint bin/user/pushover.py
-

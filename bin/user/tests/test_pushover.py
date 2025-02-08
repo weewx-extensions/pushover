@@ -367,7 +367,7 @@ class TestObservationMaxCheck(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        msg = SUT._check_max_value(name,
+        msg = SUT.check_max_value(name,
                                      label,
                                       SUT.archive_observations[observation]['equal'],
                                       value)
@@ -394,7 +394,7 @@ class TestObservationMaxCheck(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        msg = SUT._check_max_value(name,
+        msg = SUT.check_max_value(name,
                                      label,
                                       SUT.archive_observations[observation]['equal'],
                                       record_value)
@@ -424,7 +424,7 @@ class TestObservationMaxCheck(unittest.TestCase):
         SUT.archive_observations[observation]['equal']['counter'] = \
             SUT.archive_observations[observation]['equal']['count'] + 1
 
-        msg = SUT._check_max_value(name,
+        msg = SUT.check_max_value(name,
                                      label,
                                       SUT.archive_observations[observation]['equal'],
                                       record_value)
@@ -452,7 +452,7 @@ class TestObservationMinCheck(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        msg = SUT._check_min_value(name,
+        msg = SUT.check_min_value(name,
                                      label,
                                       SUT.archive_observations[observation]['equal'],
                                       value)
@@ -479,7 +479,7 @@ class TestObservationMinCheck(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        msg = SUT._check_min_value(name,
+        msg = SUT.check_min_value(name,
                                      label,
                                       SUT.archive_observations[observation]['equal'],
                                       record_value)
@@ -509,7 +509,7 @@ class TestObservationMinCheck(unittest.TestCase):
         SUT.archive_observations[observation]['equal']['counter'] = \
             SUT.archive_observations[observation]['equal']['count'] + 1
 
-        msg = SUT._check_min_value(name,
+        msg = SUT.check_min_value(name,
                                      label,
                                       SUT.archive_observations[observation]['equal'],
                                       record_value)
