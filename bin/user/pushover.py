@@ -275,7 +275,7 @@ class Pushover(StdService):
     def check_value_returned(self, observation, name, label, observation_detail, value):
         ''' Check if a notification should be sent when a missing value has returned. '''
         # ToDo: I think this needs work - think it is closer
-        log.debug("  Processing returned value for %s%s", name, label)
+        log.debug("  Processing returned value for observation %s%s", name, label)
         now = time.time()
         time_delta = now - observation_detail['last_sent_timestamp']
         log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s", time_delta, observation_detail['wait_time'], observation_detail['last_sent_timestamp'], observation, label)
@@ -283,9 +283,9 @@ class Pushover(StdService):
         msg = ''
         if observation in self.missing_observations:
             if self.missing_observations[observation]['notification_count'] > 0:
-                msg = f"{name}{label} missing at {self.missing_observations[observation]['missing_time']} has returned with value {value}.\n"
+                msg = f"{name}{label} returned at {self.missing_observations[observation]['missing_time']} after missing for {observation_detail['counter']} with value {value}.\n"
             else:
-                log.debug("    No notifcations had been sent for %s%s missing at %s and count of %s.", name, label,self.missing_observations[observation]['missing_time'], observation_detail['counter'])
+                log.debug("    No notifcations had been sent for returning %s%s gone missing at %s and count of %s.", name, label,self.missing_observations[observation]['missing_time'], observation_detail['counter'])
             observation_detail['counter'] = 0
             # Setting to 1 is a hack, this allows the time threshold to be met
             # But does not short circuit checking the count threshold
