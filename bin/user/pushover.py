@@ -301,6 +301,13 @@ class Pushover(StdService):
             observation_detail['last_sent_timestamp'] = 1
 
             del self.missing_observations[observation]
+
+        # Setting to 1 is a hack, this allows the time threshold to be met
+        # But does not short circuit checking the count threshold
+        # In otherwords, a value has been find since WeeWX started....
+        if observation_detail['last_sent_timestamp'] == 0:
+            observation_detail['last_sent_timestamp'] = 1
+    
         return msg
 
     def _process_data(self, data, observations):
