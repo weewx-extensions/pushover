@@ -164,7 +164,8 @@ class TestObservationMissing(unittest.TestCase):
 
             # Missing notification has been 'sent'.
             # Setting to 1, ensures that time threshold has NOT been met.
-            SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = int(time.time())
+            SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = \
+                int(time.time())
             # Setting to ensure that count threshold has been met.
             SUT.archive_observations[observation]['missing']['counter'] = count - 1
 

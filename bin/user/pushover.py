@@ -364,7 +364,7 @@ class Pushover(StdService):
         # In otherwords, a value has been find since WeeWX started....
         if observation_detail['last_sent_timestamp'] == 0:
             observation_detail['last_sent_timestamp'] = 1
-    
+
         return msg
 
     def _process_data(self, data, observations):
