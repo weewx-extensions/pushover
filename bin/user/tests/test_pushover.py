@@ -472,7 +472,7 @@ class TestObservationMaxCheck(unittest.TestCase):
         self.assertEqual(msg, f"{name}{label} value {record_value} is greater than {value}.\n")
 
 class TestObservationMinCheck(unittest.TestCase):
-    def test_observation_not_greater(self):
+    def test_observation_not_greater_no_notification(self):
         mock_engine = mock.Mock()
 
         binding = 'archive'
@@ -491,12 +491,50 @@ class TestObservationMinCheck(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
+        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
+            time.time()
+        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
+
         msg = SUT.check_min_value(name,
                                      label,
                                       SUT.archive_observations[observation]['equal'],
                                       value)
 
         self.assertEqual(msg, "")
+
+    def test_observation_not_greater_with_notification(self):
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        binding = 'archive'
+        observation = random_string()
+        label = f' {random_string()}'
+        name = observation
+        value = 99 # ToDo: make random int
+
+        config_dict = setup_config_dict(binding,
+                                        observation,
+                                        'equal',
+                                        label=label,
+                                        name=name,
+                                        value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        SUT = Pushover(mock_engine, config)
+
+        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 1
+
+        msg = SUT.check_min_value(name,
+                                     label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      value)
+
+        self.assertEqual(msg,
+                        (f"{name}{label} under Min threshold at {timestamp_to_string(now)} "
+                        f"is within threshold after 0 with value {value}.\n"))
 
     def test_observation_less_no_notification(self):
         mock_engine = mock.Mock()

@@ -216,10 +216,29 @@ class Pushover(StdService):
 
         msg = ''
         if value < observation_detail['value']:
+            if 'threshold_passed' not in observation_detail:
+                observation_detail['threshold_passed'] = {}
+                observation_detail['threshold_passed']['timestamp'] = now
+                observation_detail['threshold_passed']['notification_count'] = 0
+
             observation_detail['counter'] += 1
             if  time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
+                    observation_detail['threshold_passed']['notification_count'] += 1
+        else:
+            if 'threshold_passed' in observation_detail:
+                if observation_detail['threshold_passed']['notification_count'] > 0:
+                    msg = f"{name}{label} under Min threshold at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold after {observation_detail['counter']} with value {value}.\n"
+                else:
+                    log.debug("    No notifcations had been sent for %s%s going under Min threshold at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+
+                observation_detail['counter'] = 0
+                # Setting to 1 is a hack, this allows the time threshold to be met
+                # But does not short circuit checking the count threshold
+                observation_detail['last_sent_timestamp'] = 1
+
+                del observation_detail['threshold_passed']
 
         return msg
 
