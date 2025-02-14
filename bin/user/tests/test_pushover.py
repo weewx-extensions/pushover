@@ -80,7 +80,7 @@ class TestObservationMissing(unittest.TestCase):
                                           SUT.archive_observations[observation]['label'],
                                           SUT.archive_observations[observation]['missing'])
 
-        self.assertEqual(msg, f"{name} ({label}) is missing with a count of 1.\n")
+        self.assertEqual(msg, f"{name} ({label}) missing at {timestamp_to_string(SUT.missing_observations[observation]['missing_time'])}, 1 notifications sent.\n")
         self.assertIn(observation, SUT.missing_observations)
         self.assertIn('missing_time', SUT.missing_observations[observation])
 
@@ -112,7 +112,7 @@ class TestObservationMissing(unittest.TestCase):
                                           SUT.archive_observations[observation]['label'],
                                           SUT.archive_observations[observation]['missing'])
 
-            self.assertEqual(msg, f"{name} ({label}) is missing with a count of {count}.\n")
+            self.assertEqual(msg, f"{name} ({label}) missing at {timestamp_to_string(SUT.missing_observations[observation]['missing_time'])}, 1 notifications sent.\n")
             self.assertIn(observation, SUT.missing_observations)
             self.assertIn('missing_time', SUT.missing_observations[observation])
 
@@ -235,6 +235,7 @@ class TestObservationReturned(unittest.TestCase):
     def test_observation_missing_with_notification(self):
         mock_engine = mock.Mock()
         now = int(time.time())
+        notification_count = 1 # ToDo: make random
 
         binding = 'archive'
         observation = random_string()
@@ -249,7 +250,7 @@ class TestObservationReturned(unittest.TestCase):
 
         SUT.missing_observations = {
             observation: {
-                'notification_count': 1, # ToDo: randomize, integer greater than 0
+                'notification_count': notification_count,
                 'missing_time': now,
             }
         }
@@ -262,7 +263,7 @@ class TestObservationReturned(unittest.TestCase):
 
         self.assertEqual(msg,
                         (f"{name}{label} missing at {timestamp_to_string(now)} "
-                         f"returned after missing for 0 with value {value}.\n"))
+                         f"returned with value {value}, {notification_count} notification sent.\n"))
 
 class TestObservationEqualCheck(unittest.TestCase):
     def test_observation_equal_no_notification(self):
@@ -299,6 +300,7 @@ class TestObservationEqualCheck(unittest.TestCase):
     def test_observation_equal_with_notification(self):
         mock_engine = mock.Mock()
         now = time.time()
+        notification_count = 1 # ToDo: make randome
 
         binding = 'archive'
         observation = random_string()
@@ -318,7 +320,7 @@ class TestObservationEqualCheck(unittest.TestCase):
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 1
+        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
         msg = SUT.check_equal_value(name,
                                      label,
@@ -327,7 +329,7 @@ class TestObservationEqualCheck(unittest.TestCase):
 
         self.assertEqual(msg,
                          (f"{name}{label} Not Equal at {timestamp_to_string(now)} "
-                          f"is within threshold after 0 with value {value}.\n"))
+                          f"is within threshold with value {value}, {notification_count} notifications sent.\n"))
 
     def test_observation_not_equal_no_notification(self):
         mock_engine = mock.Mock()
@@ -422,6 +424,7 @@ class TestObservationMaxCheck(unittest.TestCase):
     def test_observation_not_greater_with_notification(self):
         mock_engine = mock.Mock()
         now = time.time()
+        notification_count = 1 # ToDo: make random
 
         binding = 'archive'
         observation = random_string()
@@ -441,7 +444,7 @@ class TestObservationMaxCheck(unittest.TestCase):
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 1
+        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
         msg = SUT.check_max_value(name,
                                      label,
@@ -450,7 +453,7 @@ class TestObservationMaxCheck(unittest.TestCase):
 
         self.assertEqual(msg,
                          (f"{name}{label} over Max threshold at {timestamp_to_string(now)} "
-                          f"is within threshold after 0 with value {value}.\n"))
+                          f"is within threshold with value {value}, {notification_count} notifications sent.\n"))
 
     def test_observation_greater_no_notification(self):
         mock_engine = mock.Mock()
@@ -545,6 +548,7 @@ class TestObservationMinCheck(unittest.TestCase):
     def test_observation_not_greater_with_notification(self):
         mock_engine = mock.Mock()
         now = time.time()
+        notification_count = 1 # ToDo: make random
 
         binding = 'archive'
         observation = random_string()
@@ -564,7 +568,7 @@ class TestObservationMinCheck(unittest.TestCase):
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 1
+        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
         msg = SUT.check_min_value(name,
                                      label,
@@ -573,7 +577,7 @@ class TestObservationMinCheck(unittest.TestCase):
 
         self.assertEqual(msg,
                         (f"{name}{label} under Min threshold at {timestamp_to_string(now)} "
-                        f"is within threshold after 0 with value {value}.\n"))
+                        f"is within threshold with value {value}, {notification_count} notifications sent.\n"))
 
     def test_observation_less_no_notification(self):
         mock_engine = mock.Mock()
