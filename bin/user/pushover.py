@@ -229,7 +229,7 @@ class Pushover(StdService):
         else:
             if 'threshold_passed' in observation_detail:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
-                    msg = f"{name}{label} under Min threshold at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}.\n"
+                    msg = f"{name}{label} under Min threshold at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}, {observation_detail['threshold_passed']['notification_count']} notifications sent.\n"
                 else:
                     log.debug("    No notifcations had been sent for %s%s going under Min threshold at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
 
@@ -266,7 +266,7 @@ class Pushover(StdService):
         else:
             if 'threshold_passed' in observation_detail:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
-                    msg = f"{name}{label} over Max threshold at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}.\n"
+                    msg = f"{name}{label} over Max threshold at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}, {observation_detail['threshold_passed']['notification_count']} notifications sent.\n"
                 else:
                     log.debug("    No notifcations had been sent for %s%s going over Max threshold at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
 
@@ -303,7 +303,7 @@ class Pushover(StdService):
         else:
             if 'threshold_passed' in observation_detail:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
-                    msg = f"{name}{label} Not Equal at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}.\n"
+                    msg = f"{name}{label} Not Equal at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}, {observation_detail['threshold_passed']['notification_count']} notifications sent.\n"
                 else:
                     log.debug("    No notifcations had been sent for %s%s being Not Equal at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
 
@@ -334,7 +334,7 @@ class Pushover(StdService):
         if  time_delta >= observation_detail['wait_time']:
             if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
                 self.missing_observations[observation]['notification_count'] += 1
-                msg = f"{name}{label} missing at {timestamp_to_string(self.missing_observations[observation]['missing_time'])}.\n"
+                msg = f"{name}{label} missing at {timestamp_to_string(self.missing_observations[observation]['missing_time'])}, {self.missing_observations[observation]['notification_count']} notifications sent.\n"
         return msg
 
     def check_value_returned(self, observation, name, label, observation_detail, value):
@@ -348,7 +348,7 @@ class Pushover(StdService):
         msg = ''
         if observation in self.missing_observations:
             if self.missing_observations[observation]['notification_count'] > 0:
-                msg = f"{name}{label} missing at {timestamp_to_string(self.missing_observations[observation]['missing_time'])} returned with value {value}.\n"
+                msg = f"{name}{label} missing at {timestamp_to_string(self.missing_observations[observation]['missing_time'])} returned with value {value}, {self.missing_observations[observation]['notification_count']} notification sent.\n"
             else:
                 log.debug("    No notifcations had been sent for returning %s%s gone missing at %s and count of %s.", name, label, timestamp_to_string(self.missing_observations[observation]['missing_time']), observation_detail['counter'])
             observation_detail['counter'] = 0
