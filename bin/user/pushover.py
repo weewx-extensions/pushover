@@ -224,8 +224,8 @@ class Pushover(StdService):
             observation_detail['counter'] += 1
             if  time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
-                    msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
                     observation_detail['threshold_passed']['notification_count'] += 1
+                    msg = f"{name}{label} value {value} is less than {observation_detail['value']}.\n"
         else:
             if 'threshold_passed' in observation_detail:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
@@ -261,8 +261,8 @@ class Pushover(StdService):
             observation_detail['counter'] += 1
             if  time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
-                    msg = f"{name}{label} value {value} is greater than {observation_detail['value']}.\n"
                     observation_detail['threshold_passed']['notification_count'] += 1
+                    msg = f"{name}{label} value {value} is greater than {observation_detail['value']}.\n"
         else:
             if 'threshold_passed' in observation_detail:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
@@ -298,8 +298,8 @@ class Pushover(StdService):
             observation_detail['counter'] += 1
             if  time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
-                    msg = f"{name}{label} value {value} is Not Equal to {observation_detail['value']}.\n"
                     observation_detail['threshold_passed']['notification_count'] += 1
+                    msg = f"{name}{label} value {value} is Not Equal to {observation_detail['value']}.\n"
         else:
             if 'threshold_passed' in observation_detail:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
@@ -333,9 +333,8 @@ class Pushover(StdService):
         msg = ''
         if  time_delta >= observation_detail['wait_time']:
             if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
-                msg = f"{name}{label} missing at {timestamp_to_string(self.missing_observations[observation]['missing_time'])}.\n"
                 self.missing_observations[observation]['notification_count'] += 1
-
+                msg = f"{name}{label} missing at {timestamp_to_string(self.missing_observations[observation]['missing_time'])}.\n"
         return msg
 
     def check_value_returned(self, observation, name, label, observation_detail, value):
