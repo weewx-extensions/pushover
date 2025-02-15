@@ -395,8 +395,9 @@ class TestObservationEqualCheck(unittest.TestCase):
                                       record_value)
 
 
-        self.assertEqual(msg, f"{name}{label} value {record_value} is Not Equal to {value}.\n")
-
+        self.assertEqual(msg,
+                         (f"At {timestamp_to_string(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
+                          f"{name}{label} value {record_value} is Not Equal to {value}.\n"))
 class TestObservationMaxCheck(unittest.TestCase):
     def test_observation_not_greater_no_notification(self):
         mock_engine = mock.Mock()
@@ -521,8 +522,9 @@ class TestObservationMaxCheck(unittest.TestCase):
                                       record_value)
 
 
-        self.assertEqual(msg, f"{name}{label} value {record_value} is greater than {value}.\n")
-
+        self.assertEqual(msg,
+                         (f"At {timestamp_to_string(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
+                          f"{name}{label} value {record_value} is greater than {value}.\n"))
 class TestObservationMinCheck(unittest.TestCase):
     def test_observation_not_greater_no_notification(self):
         mock_engine = mock.Mock()
@@ -647,7 +649,9 @@ class TestObservationMinCheck(unittest.TestCase):
                                       record_value)
 
 
-        self.assertEqual(msg, f"{name}{label} value {record_value} is less than {value}.\n")
+        self.assertEqual(msg,
+                         (f"At {timestamp_to_string(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
+                          f"{name}{label} value {record_value} is less than {value}.\n"))
 
 if __name__ == '__main__':
     #test_suite = unittest.TestSuite()
