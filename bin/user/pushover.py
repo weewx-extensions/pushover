@@ -231,7 +231,7 @@ class Pushover(StdService):
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     msg = f"{name}{label} under Min threshold at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}, {observation_detail['threshold_passed']['notification_count']} notifications sent.\n"
                 else:
-                    log.debug("    No notifcations had been sent for %s%s going under Min threshold at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+                    log.info("No notifcations had been sent for %s%s going under Min threshold at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
 
                 observation_detail['counter'] = 0
                 # Setting to 1 is a hack, this allows the time threshold to be met
@@ -268,7 +268,7 @@ class Pushover(StdService):
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     msg = f"{name}{label} over Max threshold at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}, {observation_detail['threshold_passed']['notification_count']} notifications sent.\n"
                 else:
-                    log.debug("    No notifcations had been sent for %s%s going over Max threshold at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+                    log.info("No notifcations had been sent for %s%s going over Max threshold at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
 
                 observation_detail['counter'] = 0
                 # Setting to 1 is a hack, this allows the time threshold to be met
@@ -305,7 +305,7 @@ class Pushover(StdService):
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     msg = f"{name}{label} Not Equal at {timestamp_to_string(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}, {observation_detail['threshold_passed']['notification_count']} notifications sent.\n"
                 else:
-                    log.debug("    No notifcations had been sent for %s%s being Not Equal at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+                    log.info("No notifcations had been sent for %s%s being Not Equal at %s and count of %s.", name, label, timestamp_to_string(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
 
                 observation_detail['counter'] = 0
                 # Setting to 1 is a hack, this allows the time threshold to be met
@@ -350,7 +350,7 @@ class Pushover(StdService):
             if self.missing_observations[observation]['notification_count'] > 0:
                 msg = f"{name}{label} missing at {timestamp_to_string(self.missing_observations[observation]['missing_time'])} returned with value {value}, {self.missing_observations[observation]['notification_count']} notification sent.\n"
             else:
-                log.debug("    No notifcations had been sent for returning %s%s gone missing at %s and count of %s.", name, label, timestamp_to_string(self.missing_observations[observation]['missing_time']), observation_detail['counter'])
+                log.info("No notifcations had been sent for returning %s%s gone missing at %s and count of %s.", name, label, timestamp_to_string(self.missing_observations[observation]['missing_time']), observation_detail['counter'])
             observation_detail['counter'] = 0
             # Setting to 1 is a hack, this allows the time threshold to be met
             # But does not short circuit checking the count threshold
