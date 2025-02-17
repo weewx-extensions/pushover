@@ -18,8 +18,7 @@ import random
 import string
 import time
 
-from user.pushover import Pushover
-from weeutil.weeutil import timestamp_to_string
+from user.pushover import Pushover, format_timestamp
 
 def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)]) # pylint: disable=unused-variable
@@ -84,7 +83,7 @@ class TestObservationMissing(unittest.TestCase):
 
         self.assertEqual(msg,
                             (f"{name} ({label}) missing at "
-                            f"{timestamp_to_string(SUT.missing_observations[observation]['missing_time'])}, "
+                            f"{format_timestamp(SUT.missing_observations[observation]['missing_time'])}, "
                             f"1 notifications sent.\n"))
         self.assertIn(observation, SUT.missing_observations)
         self.assertIn('missing_time', SUT.missing_observations[observation])
@@ -119,7 +118,7 @@ class TestObservationMissing(unittest.TestCase):
 
             self.assertEqual(msg,
                              (f"{name} ({label}) missing at "
-                              f"{timestamp_to_string(SUT.missing_observations[observation]['missing_time'])}, "
+                              f"{format_timestamp(SUT.missing_observations[observation]['missing_time'])}, "
                               f"1 notifications sent.\n"))
             self.assertIn(observation, SUT.missing_observations)
             self.assertIn('missing_time', SUT.missing_observations[observation])
@@ -270,7 +269,7 @@ class TestObservationReturned(unittest.TestCase):
                                        value)
 
         self.assertEqual(msg,
-                        (f"{name}{label} missing at {timestamp_to_string(now)} "
+                        (f"{name}{label} missing at {format_timestamp(now)} "
                          f"returned with value {value}, {notification_count} notification sent.\n"))
 
     def test_observation_missing_notification_not_requested(self):
@@ -368,7 +367,7 @@ class TestObservationEqualCheck(unittest.TestCase):
                                       value)
 
         self.assertEqual(msg,
-                         (f"{name}{label} Not Equal at {timestamp_to_string(now)} "
+                         (f"{name}{label} Not Equal at {format_timestamp(now)} "
                           f"is within threshold with value {value}, "
                           f"{notification_count} notifications sent.\n"))
 
@@ -463,7 +462,7 @@ class TestObservationEqualCheck(unittest.TestCase):
 
 
         self.assertEqual(msg,
-                        (f"At {timestamp_to_string(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
+                        (f"At {format_timestamp(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
                         f"{name}{label} is no longer equal to threshold of {value}. Current value is {record_value}.\n"))
 
 class TestObservationMaxCheck(unittest.TestCase):
@@ -530,7 +529,7 @@ class TestObservationMaxCheck(unittest.TestCase):
                                       value)
 
         self.assertEqual(msg,
-                         (f"{name}{label} over Max threshold at {timestamp_to_string(now)} "
+                         (f"{name}{label} over Max threshold at {format_timestamp(now)} "
                           f"is within threshold with value {value}, "
                           f"{notification_count} notifications sent.\n"))
 
@@ -625,7 +624,7 @@ class TestObservationMaxCheck(unittest.TestCase):
 
 
         self.assertEqual(msg,
-                         (f"At {timestamp_to_string(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
+                         (f"At {format_timestamp(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
                           f"{name}{label} went above threshold of {value}. Current value is {record_value}.\n"))
 
 class TestObservationMinCheck(unittest.TestCase):
@@ -692,7 +691,7 @@ class TestObservationMinCheck(unittest.TestCase):
                                       value)
 
         self.assertEqual(msg,
-                        (f"{name}{label} under Min threshold at {timestamp_to_string(now)} "
+                        (f"{name}{label} under Min threshold at {format_timestamp(now)} "
                         f"is within threshold with value {value}, "
                         f"{notification_count} notifications sent.\n"))
 
@@ -787,7 +786,7 @@ class TestObservationMinCheck(unittest.TestCase):
 
 
         self.assertEqual(msg,
-                         (f"At {timestamp_to_string(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
+                         (f"At {format_timestamp(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
                           f"{name}{label} went below threshold of {value}. Current value is {record_value}.\n"))
 
 if __name__ == '__main__':
