@@ -76,6 +76,7 @@ from weeutil.weeutil import to_bool, to_int
 log = logging.getLogger(__name__)
 
 def format_timestamp(ts, format_str="%Y-%m-%d %H:%M:%S %Z"):
+    ''' Format a timestamp for human consumption. '''
     return f"{time.strftime(format_str, time.localtime(ts))}"
 
 class Pushover(StdService):
