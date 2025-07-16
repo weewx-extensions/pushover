@@ -24,20 +24,12 @@ After installing `weewx-pushover`, edit the `Pushover` in `weewx.conf` as needed
     app_token = REPLACE_ME
     user_key = REPLACE_ME
     
-    # Whether to chevk the 'loop' packet or 'archive' record' data.
-    # The default is 'loop'
-    # binding = loop
-
     # Pushover returns a status code in the range of 400 to 499 when the http request is bad.
     # In this case, WeeWX-Pushover will stop sending requests.
     # (On the assumption that all future requests will have the same error.)
-    # An error will be logged ever 'client_error_log_frequency' seconds.
+    # An error will be logged every 'client_error_log_frequency' seconds.
     # The default is 3600 seconds.
     # client_error_log_frequency = 3600
-
-    # The number of times the threshold needs to be reached before sending a notification.
-    # The default is 10.    
-    # count = 10
 
     # Pushover returns a status code in the range of 500 to 599 when something went wrong on the server.
     # In this case WeeWX-Pushover will wait 'server_error_wait_period' before resuming sending requests.
@@ -49,48 +41,33 @@ After installing `weewx-pushover`, edit the `Pushover` in `weewx.conf` as needed
     # The default is 3600 seconds.
     # wait_time = 3600
 
-    # The set of WeeWX observations to monitor.
-    # Each subsection is the name of observation.
-    # These can be anything
-    # For example, inTemp_warn, inTemp_critical, etc
-    [[observations]]
+    # Whether to monitor the loop or archive data.
+    # With two sections [[loop]] and [[archive]], both loop and archive data can be monitored.
+    [[loop or archive]]
+        # The set of WeeWX observations to monitor.
+        # Each subsection is the name of WeeWX observation.
+        # For example, outTemp, inTemp, txBatteryStatus, etc
+        # The section name can be anything. If possible, it is recommended to use the WeeWX name.
         [[[REPLACE_ME]]]
+            # The WeeWX name (outTemp, inTemp, etc.)
+            # If this section 'REPLACE_ME is the WeeWX name, this is not needed.
+            #name = 
 
-            # Override the 'binding' for this observation.
-            # binding = loop
-
-            The maximum value to monitor.
-            # max =  REPLACE_ME
-
-            # Override the max 'count' for this observation.
-            # max_count = 10
+            # A Descriptive name of this observation (Outside Temperature, Inside Temperature, etc.)
+            label = 
             
-            # Override the max 'wait_time' for this observation.
-            # max_wait_time = 3600
+            # All three sections can be specified for a given WeeWX observation.
+            # This allows one to monitor when values go below, above, or are no longer equal to a value.
+            [[[[ min or max or equal]]]]
+                # The time in seconds to wait before sending another notification.
+                # This is used to throttle the number of notifications.
+                # The default is 3600 seconds.
+                #wait_time = 3600
 
-            # The minimum value to monitor.
-            # min = REPLACE_ME
-            
-            # The number of times the minimum needs to be reached before sending a notification.
-            # The default is 10.
-            # min_count = 10
-            
-            # Override the min 'count' for this observation.
-            # min_count = 10
-            
-            # Override the min 'wait_time' for this observation.
-            # min_wait_time = 3600
-            
-            # A descriptive name of this observation
-            # Default is the observation name for this section.
-            # name = 
+                # The number of times the threshold needs to be reached before sending a notification.
+                # The default is 10.
+                #count = 10
 
-            # The time in seconds to wait before sending another notification.
-            # This is used to throttle the number of notifications.
-            # The default is 3600 seconds.
-            # wait_time = 3600
-
-            # The WeeWX name of this observation
-            # Default is the observation name for this section.
-            # weewx_name = 
+                # The value to monitor.
+                #value = REPLACE_ME
 ```
