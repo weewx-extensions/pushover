@@ -4,10 +4,6 @@
 #    See the file LICENSE.txt for your full rights.
 #
 
-# pylint: disable=fixme
-# pylint: disable=line-too-long
-# ToDo: find a better way to handle pylint errors
-
 '''
 Monitor that observation values are within a defined range.
 If a value is out of range, send a notification via pushover.net
@@ -471,7 +467,7 @@ class Pushover(StdService):
 
         self._process_data(event.packet, self.loop_observations)
 
-    def shutDown(self): # need to override parent - pylint: disable=invalid-name
+    def shutDown(self):
         """Run when an engine shutdown is requested."""
         self.executor.shutdown(wait=False)
 
