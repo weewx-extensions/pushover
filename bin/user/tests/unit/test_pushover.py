@@ -4,12 +4,6 @@
 #    See the file LICENSE.txt for your full rights.
 #
 
-# pylint: disable=fixme
-
-# pylint: disable=wrong-import-order
-# pylint: disable=missing-docstring
-# pylint: disable=invalid-name
-
 import unittest
 import mock
 
@@ -21,7 +15,7 @@ import time
 from user.pushover import Pushover, format_timestamp
 
 def random_string(length=32):
-    return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)]) # pylint: disable=unused-variable
+    return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)])
 
 def setup_config_dict(binding,
                         observation,
