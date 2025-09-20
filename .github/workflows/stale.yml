@@ -3,8 +3,8 @@ name: Stale Issues
 on:
   schedule:
   #- cron: "0 0 * * *"
-  - cron: "0 * * * *"
-  workflow_dispatch:
+  - cron: "25 * * * *"
+  #workflow_dispatch:
 
 jobs:
   stale:
