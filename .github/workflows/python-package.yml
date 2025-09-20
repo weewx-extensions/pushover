@@ -13,5 +13,4 @@ jobs:
       module-name: 'pushover'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
