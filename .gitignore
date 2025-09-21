@@ -2,3 +2,4 @@ bin/user/__pycache__/
 bin/user/tests/__pycache__/
 .coverage
 act-artifacts/
+*.pyc
