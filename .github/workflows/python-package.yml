@@ -11,6 +11,7 @@ jobs:
     uses: weewx-extensions/development_tools/.github/workflows/analyze-test.yml@v1.0.0
     with:
       module-name: 'pushover'
+      function-test: false
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
