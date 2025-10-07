@@ -393,7 +393,7 @@ class Pushover(StdService):
             observation = observation_detail['weewx_name']
             title = None
 
-            if observation in data and data[observation]:
+            if observation in data and data[observation] is not None:
                 log.debug("Processing observation: %s%s", observation, observation_detail['label'])
                 # This means that if an observation 'goes missing', it needs a value that is not None to be marked as 'back'
                 if observation_detail.get('missing', None):
