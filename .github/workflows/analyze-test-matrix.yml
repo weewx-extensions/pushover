@@ -9,7 +9,7 @@ on:
 
 jobs:
   analyze-test:
-    uses: weewx-extensions/development_tools/.github/workflows/full-analyze-test.yml@v2.0.0
+    uses: weewx-extensions/development_tools/.github/workflows/full-analyze-test.yml@v3
     with:
       module-name: 'pushover'
       #pip-list: 'paho-mqtt'
