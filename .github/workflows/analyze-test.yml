@@ -1,9 +1,8 @@
-name: Test the analyze and test workflow
+name: Analyze and test
 
 on:
   push:
     branches-ignore: [ "master" ]
-  workflow_dispatch:
 
 jobs:
   analyze-test:
@@ -14,6 +13,8 @@ jobs:
       #package-list: 'mosquitto'
       function-test: false
       integration-test: false
+      e2e-test: false
+      #flake-extra-parms: '--exclude tests'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
