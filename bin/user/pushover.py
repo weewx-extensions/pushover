@@ -529,41 +529,32 @@ class Pushover(StdService):
                             observation_detail[key]['last_sent_timestamp'] = now
                             observation_detail[key]['counter'] = 0
 
-    def new_archive_record(self, event):
-        """ Handle the new archive record event. """
+    def throttle_notification(self):
         now = int(time.time())
         if self.client_error_timestamp:
             if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
                 log.error("Fatal error occurred at %s, Pushover skipped.", format_timestamp(self.client_error_timestamp))
                 self.client_error_last_logged = now
-                return
+                return True
 
         if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
             log.debug("Server error received at %s, waiting %s seconds before retrying.",
                       format_timestamp(self.server_error_timestamp),
                       self.server_error_wait_period)
-            return
-        self.server_error_timestamp = 0
+            return True
 
-        self._process_data(event.record, self.archive_observations)
+        self.server_error_timestamp = 0
+        return False
+
+    def new_archive_record(self, event):
+        """ Handle the new archive record event. """
+        if not self.throttle_notification():
+            self._process_data(event.record, self.archive_observations)
 
     def new_loop_packet(self, event):
         """ Handle the new loop packet event. """
-        now = int(time.time())
-        if self.client_error_timestamp:
-            if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
-                log.error("Fatal error occurred at %s, Pushover skipped.", format_timestamp(self.client_error_timestamp))
-                self.client_error_last_logged = now
-                return
-
-        if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
-            log.debug("Server error received at %s, waiting %s seconds before retrying.",
-                      format_timestamp(self.server_error_timestamp),
-                      self.server_error_wait_period)
-            return
-        self.server_error_timestamp = 0
-
-        self._process_data(event.packet, self.loop_observations)
+        if not self.throttle_notification():
+            self._process_data(event.packet, self.loop_observations)
 
     def shutDown(self):
         """Run when an engine shutdown is requested."""
