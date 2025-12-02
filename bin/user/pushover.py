@@ -11,7 +11,7 @@ See, https://pushover.net
 
 Configuration:
 [Pushover]
-    
+
     # Whether the service is enabled or not.
     # Valid values: True or False
     # Default is True.
@@ -38,8 +38,8 @@ Configuration:
         [[[REPLACE_ME]]]
             # A Descriptive name of this observation
             # Default is the WeeWX name.
-            #name = 
-            
+            #name =
+
             [[[[ min or max or equal]]]]
                 # The time in seconds to wait before sending another notification.
                 # This is used to throttle the number of notifications.
@@ -108,7 +108,11 @@ class Pushover(StdService):
             default_loop_wait_time = to_int(service_dict['loop'].get('wait_time', wait_time))
             default_loop_return_notification = to_bool(service_dict['loop'].get('return_notification', return_notification))
             for observation in service_dict['loop']:
-                self.loop_observations[observation] = self.init_observations(service_dict['loop'][observation], observation, count, default_loop_wait_time, default_loop_return_notification)
+                self.loop_observations[observation] = self.init_observations(service_dict['loop'][observation],
+                                                                             observation,
+                                                                             count,
+                                                                             default_loop_wait_time,
+                                                                             default_loop_return_notification)
         log.info("loop observations: %s", self.loop_observations)
 
         self.archive_observations = {}
@@ -116,7 +120,11 @@ class Pushover(StdService):
             default_archive_wait_time = to_int(service_dict['archive'].get('wait_time', wait_time))
             default_archive_return_notification = to_bool(service_dict['archive'].get('return_notification', return_notification))
             for observation in service_dict['archive']:
-                self.archive_observations[observation] = self.init_observations(service_dict['archive'][observation], observation, count, default_archive_wait_time, default_archive_return_notification)
+                self.archive_observations[observation] = self.init_observations(service_dict['archive'][observation],
+                                                                                observation,
+                                                                                count,
+                                                                                default_archive_wait_time,
+                                                                                default_archive_return_notification)
         log.info("archive observations: %s", self.archive_observations)
 
         self.client_error_timestamp = 0
@@ -150,7 +158,8 @@ class Pushover(StdService):
                     observation['returned'] = {}
                 observation[value_type]['count'] = int(config[value_type].get('count', count))
                 observation[value_type]['wait_time'] = to_int(config[value_type].get('wait_time', wait_time))
-                observation[value_type]['return_notification'] = to_bool(config[value_type].get('return_notification', return_notification))
+                observation[value_type]['return_notification'] = to_bool(config[value_type].get('return_notification',
+                                                                                                return_notification))
                 observation[value_type]['last_sent_timestamp'] = 0
                 observation[value_type]['counter'] = 0
 
@@ -176,13 +185,11 @@ class Pushover(StdService):
 
         connection.request("POST",
                            f"{self.api}",
-                           urllib.parse.urlencode({
-                               "token": self.app_token,
-                               "user": self.user_key,
-                               "message": msg,
-                               "title": title,                               
-                               }),
-                            { "Content-type": "application/x-www-form-urlencoded" })
+                           urllib.parse.urlencode({"token": self.app_token,
+                                                   "user": self.user_key,
+                                                   "message": msg,
+                                                   "title": title, }),
+                           {"Content-type": "application/x-www-form-urlencoded"})
         response = connection.getresponse()
         now = int(time.time())
         log.debug("Response code is: '%s' for %s", response.code, obs)
@@ -216,7 +223,11 @@ class Pushover(StdService):
         log.debug("  Min check if %s is less than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta Min is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
-        log.debug("    Running count Min is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
+        log.debug("    Running count Min is %s and threshold is %s for %s%s",
+                  observation_detail['counter'],
+                  observation_detail['count'],
+                  name,
+                  label)
 
         msg = ''
         if value < observation_detail['value']:
@@ -226,7 +237,7 @@ class Pushover(StdService):
                 observation_detail['threshold_passed']['notification_count'] = 0
 
             observation_detail['counter'] += 1
-            if  time_delta >= observation_detail['wait_time']:
+            if time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     observation_detail['threshold_passed']['notification_count'] += 1
                     msg = (f"At {format_timestamp(observation_detail['threshold_passed']['timestamp'])} {name}{label} "
@@ -235,11 +246,22 @@ class Pushover(StdService):
             if 'threshold_passed' in observation_detail:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     if observation_detail['return_notification']:
-                        msg = f"{name}{label} under Min threshold at {format_timestamp(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}, {observation_detail['threshold_passed']['notification_count']} notifications sent.\n"
+                        msg = (f"{name}{label} under Min threshold at "
+                               f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
+                               f"is within threshold with value {value}, "
+                               f"{observation_detail['threshold_passed']['notification_count']} notifications sent.\n")
                     else:
-                        log.debug("    Notification not requested for %s%s going under Min threshold at %s and count of %s.", name, label, format_timestamp(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+                        log.debug("    Notification not requested for %s%s going under Min threshold at %s and count of %s.",
+                                  name,
+                                  label,
+                                  format_timestamp(observation_detail['threshold_passed']['timestamp']),
+                                  observation_detail['counter'])
                 else:
-                    log.info("No notifcations had been sent for %s%s going under Min threshold at %s and count of %s.", name, label, format_timestamp(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+                    log.info("No notifcations had been sent for %s%s going under Min threshold at %s and count of %s.",
+                             name,
+                             label,
+                             format_timestamp(observation_detail['threshold_passed']['timestamp']),
+                             observation_detail['counter'])
 
                 observation_detail['counter'] = 0
                 # Setting to 1 is a hack, this allows the time threshold to be met
@@ -257,7 +279,11 @@ class Pushover(StdService):
         log.debug("  Max check if %s is greater than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta Max is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
-        log.debug("    Running count Max is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
+        log.debug("    Running count Max is %s and threshold is %s for %s%s",
+                  observation_detail['counter'],
+                  observation_detail['count'],
+                  name,
+                  label)
 
         msg = ''
         if value > observation_detail['value']:
@@ -267,7 +293,7 @@ class Pushover(StdService):
                 observation_detail['threshold_passed']['notification_count'] = 0
 
             observation_detail['counter'] += 1
-            if  time_delta >= observation_detail['wait_time']:
+            if time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     observation_detail['threshold_passed']['notification_count'] += 1
                     msg = (f"At {format_timestamp(observation_detail['threshold_passed']['timestamp'])} {name}{label} "
@@ -276,11 +302,22 @@ class Pushover(StdService):
             if 'threshold_passed' in observation_detail:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     if observation_detail['return_notification']:
-                        msg = f"{name}{label} over Max threshold at {format_timestamp(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}, {observation_detail['threshold_passed']['notification_count']} notifications sent.\n"
+                        msg = (f"{name}{label} over Max threshold at "
+                               f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
+                               f"is within threshold with value {value}, "
+                               f"{observation_detail['threshold_passed']['notification_count']} notifications sent.\n")
                     else:
-                        log.debug("    Notification not requested for %s%s going over Max threshold at %s and count of %s.", name, label, format_timestamp(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+                        log.debug("    Notification not requested for %s%s going over Max threshold at %s and count of %s.",
+                                  name,
+                                  label,
+                                  format_timestamp(observation_detail['threshold_passed']['timestamp']),
+                                  observation_detail['counter'])
                 else:
-                    log.info("No notifcations had been sent for %s%s going over Max threshold at %s and count of %s.", name, label, format_timestamp(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+                    log.info("No notifcations had been sent for %s%s going over Max threshold at %s and count of %s.",
+                             name,
+                             label,
+                             format_timestamp(observation_detail['threshold_passed']['timestamp']),
+                             observation_detail['counter'])
 
                 observation_detail['counter'] = 0
                 # Setting to 1 is a hack, this allows the time threshold to be met
@@ -297,8 +334,16 @@ class Pushover(StdService):
         now = int(time.time())
         log.debug("  Equal check if %s is equal to %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
-        log.debug("    Time delta Equal is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
-        log.debug("    Running count Equal is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], name, label)
+        log.debug("    Time delta Equal is %s and threshold is %s for %s%s",
+                  time_delta,
+                  observation_detail['wait_time'],
+                  name,
+                  label)
+        log.debug("    Running count Equal is %s and threshold is %s for %s%s",
+                  observation_detail['counter'],
+                  observation_detail['count'],
+                  name,
+                  label)
 
         msg = ''
         if value != observation_detail['value']:
@@ -308,7 +353,7 @@ class Pushover(StdService):
                 observation_detail['threshold_passed']['notification_count'] = 0
 
             observation_detail['counter'] += 1
-            if  time_delta >= observation_detail['wait_time']:
+            if time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     observation_detail['threshold_passed']['notification_count'] += 1
                     msg = (f"At {format_timestamp(observation_detail['threshold_passed']['timestamp'])} {name}{label} "
@@ -317,11 +362,21 @@ class Pushover(StdService):
             if 'threshold_passed' in observation_detail:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     if observation_detail['return_notification']:
-                        msg = f"{name}{label} Not Equal at {format_timestamp(observation_detail['threshold_passed']['timestamp'])} is within threshold with value {value}, {observation_detail['threshold_passed']['notification_count']} notifications sent.\n"
+                        msg = (f"{name}{label} Not Equal at {format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
+                               f"is within threshold with value {value}, "
+                               f"{observation_detail['threshold_passed']['notification_count']} notifications sent.\n")
                     else:
-                        log.debug("    Notification not requested for %s%s being Not Equal at %s and count of %s.", name, label, format_timestamp(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+                        log.debug("    Notification not requested for %s%s being Not Equal at %s and count of %s.",
+                                  name,
+                                  label,
+                                  format_timestamp(observation_detail['threshold_passed']['timestamp']),
+                                  observation_detail['counter'])
                 else:
-                    log.info("No notifcations had been sent for %s%s being Not Equal at %s and count of %s.", name, label, format_timestamp(observation_detail['threshold_passed']['timestamp']), observation_detail['counter'])
+                    log.info("No notifcations had been sent for %s%s being Not Equal at %s and count of %s.",
+                             name,
+                             label,
+                             format_timestamp(observation_detail['threshold_passed']['timestamp']),
+                             observation_detail['counter'])
 
                 observation_detail['counter'] = 0
                 # Setting to 1 is a hack, this allows the time threshold to be met
@@ -337,8 +392,17 @@ class Pushover(StdService):
         log.debug("  Processing missing for %s%s", name, label)
         now = int(time.time())
         time_delta = now - observation_detail['last_sent_timestamp']
-        log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s", time_delta, observation_detail['wait_time'], observation_detail['last_sent_timestamp'], observation, label)
-        log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], observation, label)
+        log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s",
+                  time_delta,
+                  observation_detail['wait_time'],
+                  observation_detail['last_sent_timestamp'],
+                  observation,
+                  label)
+        log.debug("    Running count is %s and threshold is %s for %s%s",
+                  observation_detail['counter'],
+                  observation_detail['count'],
+                  observation,
+                  label)
 
         if observation not in self.missing_observations:
             self.missing_observations[observation] = {}
@@ -347,10 +411,11 @@ class Pushover(StdService):
 
         observation_detail['counter'] += 1
         msg = ''
-        if  time_delta >= observation_detail['wait_time']:
+        if time_delta >= observation_detail['wait_time']:
             if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
                 self.missing_observations[observation]['notification_count'] += 1
-                msg = f"{name}{label} missing at {format_timestamp(self.missing_observations[observation]['missing_time'])}, {self.missing_observations[observation]['notification_count']} notifications sent.\n"
+                msg = (f"{name}{label} missing at {format_timestamp(self.missing_observations[observation]['missing_time'])}, "
+                       f"{self.missing_observations[observation]['notification_count']} notifications sent.\n")
         return msg
 
     def check_value_returned(self, observation, name, label, observation_detail, value):
@@ -359,17 +424,34 @@ class Pushover(StdService):
         log.debug("  Processing returned value for observation %s%s", name, label)
         now = int(time.time())
         time_delta = now - observation_detail['last_sent_timestamp']
-        log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s", time_delta, observation_detail['wait_time'], observation_detail['last_sent_timestamp'], observation, label)
-        log.debug("    Running count is %s and threshold is %s for %s%s", observation_detail['counter'], observation_detail['count'], observation, label)
+        log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s",
+                  time_delta,
+                  observation_detail['wait_time'],
+                  observation_detail['last_sent_timestamp'],
+                  observation, label)
+        log.debug("    Running count is %s and threshold is %s for %s%s",
+                  observation_detail['counter'],
+                  observation_detail['count'],
+                  observation,
+                  label)
         msg = ''
         if observation in self.missing_observations:
             if self.missing_observations[observation]['notification_count'] > 0:
                 if observation_detail['return_notification']:
-                    msg = f"{name}{label} missing at {format_timestamp(self.missing_observations[observation]['missing_time'])} returned with value {value}, {self.missing_observations[observation]['notification_count']} notification sent.\n"
+                    msg = (f"{name}{label} missing at {format_timestamp(self.missing_observations[observation]['missing_time'])} "
+                           f"returned with value {value}, "
+                           f"{self.missing_observations[observation]['notification_count']} notification sent.\n")
                 else:
-                    log.debug("    Notification not requested for %s%s gone missing at %s and count of %s.", name, label, format_timestamp(self.missing_observations[observation]['missing_time']), observation_detail['counter'])
+                    log.debug("    Notification not requested for %s%s gone missing at %s and count of %s.",
+                              name,
+                              label,
+                              format_timestamp(self.missing_observations[observation]['missing_time']),
+                              observation_detail['counter'])
             else:
-                log.info("No notifcations had been sent for returning %s%s gone missing at %s and count of %s.", name, label, format_timestamp(self.missing_observations[observation]['missing_time']), observation_detail['counter'])
+                log.info("No notifcations had been sent for returning %s%s gone missing at %s and count of %s.",
+                         name,
+                         label,
+                         format_timestamp(self.missing_observations[observation]['missing_time']), observation_detail['counter'])
             observation_detail['counter'] = 0
             # Setting to 1 is a hack, this allows the time threshold to be met
             # But does not short circuit checking the count threshold
@@ -386,7 +468,7 @@ class Pushover(StdService):
         return msg
 
     def _process_data(self, data, observations):
-        #log.debug("Processing record: %s", data)
+        # log.debug("Processing record: %s", data)
         msgs = {}
         now = int(time.time())
         for obs, observation_detail in observations.items():
@@ -398,24 +480,40 @@ class Pushover(StdService):
                 # This means that if an observation 'goes missing', it needs a value that is not None to be marked as 'back'
                 if observation_detail.get('missing', None):
                     # ToDo: I think it needs to be different than msgs['missing']
-                    msgs['returned'] = self.check_value_returned(observation, observation_detail['name'], observation_detail['label'], observation_detail['missing'], data[observation])
+                    msgs['returned'] = self.check_value_returned(observation,
+                                                                 observation_detail['name'],
+                                                                 observation_detail['label'],
+                                                                 observation_detail['missing'],
+                                                                 data[observation])
                     if msgs['returned']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail.get('min', None):
-                    msgs['min'] = self.check_min_value(observation_detail['name'], observation_detail['label'], observation_detail['min'], data[observation])
+                    msgs['min'] = self.check_min_value(observation_detail['name'],
+                                                       observation_detail['label'],
+                                                       observation_detail['min'],
+                                                       data[observation])
                     if msgs['min']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail.get('max', None):
-                    msgs['max'] = self.check_max_value(observation_detail['name'], observation_detail['label'], observation_detail['max'], data[observation])
+                    msgs['max'] = self.check_max_value(observation_detail['name'],
+                                                       observation_detail['label'],
+                                                       observation_detail['max'],
+                                                       data[observation])
                     if msgs['max']:
                         title = f"Unexpected value for {observation}."
                 if observation_detail.get('equal', None):
-                    msgs['equal'] = self.check_equal_value(observation_detail['name'], observation_detail['label'], observation_detail['equal'], data[observation])
+                    msgs['equal'] = self.check_equal_value(observation_detail['name'],
+                                                           observation_detail['label'],
+                                                           observation_detail['equal'],
+                                                           data[observation])
                     if msgs['equal']:
                         title = f"Unexpected value for {observation}."
 
             if observation not in data and observation_detail.get('missing', None):
-                msgs['missing'] = self.check_missing_value(observation, observation_detail['name'], observation_detail['label'], observation_detail['missing'])
+                msgs['missing'] = self.check_missing_value(observation,
+                                                           observation_detail['name'],
+                                                           observation_detail['label'],
+                                                           observation_detail['missing'])
                 if msgs['missing']:
                     title = f"Unexpected value for {observation}."
 
@@ -423,7 +521,7 @@ class Pushover(StdService):
                 if self.log:
                     self._logit(title, msgs)
                 if self.push:
-                    #self.executor.submit(self._push_notification, event.packet)
+                    # self.executor.submit(self._push_notification, event.packet)
                     self._push_notification(obs, observation_detail, title, msgs)
                 else:
                     for key, value in msgs.items():
@@ -471,7 +569,7 @@ class Pushover(StdService):
         """Run when an engine shutdown is requested."""
         self.executor.shutdown(wait=False)
 
-def main():
+def main():  # pragma no cover
     """ The main routine. """
     min_config_dict = {
         'Station': {
@@ -494,7 +592,6 @@ def main():
                         help="The WeeWX configuration file. Typically weewx.conf.")
     options = parser.parse_args()
 
-
     config_path = os.path.abspath(options.conf)
     config_dict = configobj.ConfigObj(config_path, file_error=True)
 
@@ -502,7 +599,7 @@ def main():
 
     packet = {'dateTime': int(time.time()),
               'mon_extraTemp6': 6,
-            }
+              }
 
     # ToDo: Make enable an option
     config_dict['Pushover']['enable'] = True
@@ -519,7 +616,7 @@ def main():
     packet = {'dateTime': int(time.time()),
               'mon_extraTemp6': 6,
               'mon_extraTemp1': 1,
-            }
+              }
     event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
     pushover.new_archive_record(event)
 
