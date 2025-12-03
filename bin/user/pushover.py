@@ -91,13 +91,13 @@ class Pushover(StdService):
         self.push = to_bool(service_dict.get('push', True))
         self.log = to_bool(service_dict.get('log', True))
 
-        self.user_key = service_dict.get('user_key', None)
-        self.app_token = service_dict.get('app_token', None)
-        self.server = service_dict.get('server', 'api.pushover.net:443')
-        self.api = service_dict.get('api', '/1/messages.json')
+        user_key = service_dict.get('user_key', None)
+        app_token = service_dict.get('app_token', None)
+        server = service_dict.get('server', 'api.pushover.net:443')
+        api = service_dict.get('api', '/1/messages.json')
 
-        self.client_error_log_frequency = to_int(service_dict.get('client_error_log_frequency', 3600))
-        self.server_error_wait_period = to_int(service_dict.get('server_error_wait_period', 3600))
+        client_error_log_frequency = to_int(service_dict.get('client_error_log_frequency', 3600))
+        server_error_wait_period = to_int(service_dict.get('server_error_wait_period', 3600))
 
         count = to_int(service_dict.get('count', 10))
         wait_time = to_int(service_dict.get('wait_time', 3600))
@@ -127,10 +127,9 @@ class Pushover(StdService):
                                                                                 default_archive_return_notification)
         log.info("archive observations: %s", self.archive_observations)
 
-        self.client_error_timestamp = 0
-        self.client_error_last_logged = 0
-        self.server_error_timestamp = 0
         self.missing_observations = {}
+
+        self.pusher = Pusher(server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period)
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
@@ -172,49 +171,6 @@ class Pushover(StdService):
                 msg += value
         log.info(title)
         log.info(msg)
-
-    def _push_notification(self, obs, observation_detail, title, msgs):
-        msg = ''
-        for _, value in msgs.items():
-            if value:
-                msg += value
-        log.debug("Title is '%s' for %s", title, obs)
-        log.debug("Message is '%s' for %s", msg, obs)
-        log.debug("Server is: '%s' for %s", self.server, obs)
-        connection = http.client.HTTPSConnection(f"{self.server}")
-
-        connection.request("POST",
-                           f"{self.api}",
-                           urllib.parse.urlencode({"token": self.app_token,
-                                                   "user": self.user_key,
-                                                   "message": msg,
-                                                   "title": title, }),
-                           {"Content-type": "application/x-www-form-urlencoded"})
-        response = connection.getresponse()
-        now = int(time.time())
-        log.debug("Response code is: '%s' for %s", response.code, obs)
-
-        if response.code == 200:
-            for key, value in msgs.items():
-                if value:
-                    observation_detail[key]['last_sent_timestamp'] = now
-                    observation_detail[key]['counter'] = 0
-
-        else:
-            log.error("Received code '%s' for %s", response.code, obs)
-            if response.code >= 400 and response.code < 500:
-                self.client_error_timestamp = now
-                self.client_error_last_logged = now
-            if response.code >= 500 and response.code < 600:
-                self.server_error_timestamp = now
-            response_body = response.read().decode()
-            try:
-                response_dict = json.loads(response_body)
-                log.error("%s for %s", '\n'.join(response_dict['errors']), obs)
-            except json.JSONDecodeError as exception:
-                log.error("Unable to parse '%s' for %s.", exception.doc, obs)
-                log.error("Error at '%s', line: '%s' column: '%s' for %s",
-                          exception.pos, exception.lineno, exception.colno, obs)
 
     def check_min_value(self, name, label, observation_detail, value):
         ''' Check if an observation is less than a desired value.
@@ -522,14 +478,43 @@ class Pushover(StdService):
                     self._logit(title, msgs)
                 if self.push:
                     # self.executor.submit(self._push_notification, event.packet)
-                    self._push_notification(obs, observation_detail, title, msgs)
+                    self.pusher.push_notification(obs, observation_detail, title, msgs)
                 else:
                     for key, value in msgs.items():
                         if value:
                             observation_detail[key]['last_sent_timestamp'] = now
                             observation_detail[key]['counter'] = 0
 
+    def new_archive_record(self, event):
+        """ Handle the new archive record event. """
+        if not self.pusher.throttle_notification():
+            self._process_data(event.record, self.archive_observations)
+
+    def new_loop_packet(self, event):
+        """ Handle the new loop packet event. """
+        if not self.pusher.throttle_notification():
+            self._process_data(event.packet, self.loop_observations)
+
+    def shutDown(self):
+        """Run when an engine shutdown is requested."""
+        self.executor.shutdown(wait=False)
+
+class Pusher():
+    """ Class to perform the pushover call."""
+    def __init__(self, server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period):
+        self.server = server
+        self.api = api
+        self.app_token = app_token
+        self.user_key = user_key
+        self.client_error_log_frequency = client_error_log_frequency
+        self.server_error_wait_period = server_error_wait_period
+
+        self.client_error_timestamp = 0
+        self.client_error_last_logged = 0
+        self.server_error_timestamp = 0
+
     def throttle_notification(self):
+        ''' Check if the call should be performed or throttled.'''
         now = int(time.time())
         if self.client_error_timestamp:
             if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
@@ -546,19 +531,54 @@ class Pushover(StdService):
         self.server_error_timestamp = 0
         return False
 
-    def new_archive_record(self, event):
-        """ Handle the new archive record event. """
-        if not self.throttle_notification():
-            self._process_data(event.record, self.archive_observations)
+    def push_notification(self, obs, observation_detail, title, msgs):
+        ''' Perform the call.'''
+        msg = ''
+        for _, value in msgs.items():
+            if value:
+                msg += value
+        log.debug("Title is '%s' for %s", title, obs)
+        log.debug("Message is '%s' for %s", msg, obs)
+        log.debug("Server is: '%s' for %s", self.server, obs)
+        connection = http.client.HTTPSConnection(f"{self.server}")
 
-    def new_loop_packet(self, event):
-        """ Handle the new loop packet event. """
-        if not self.throttle_notification():
-            self._process_data(event.packet, self.loop_observations)
+        connection.request("POST",
+                           f"{self.api}",
+                           urllib.parse.urlencode({"token": self.app_token,
+                                                   "user": self.user_key,
+                                                   "message": msg,
+                                                   "title": title, }),
+                           {"Content-type": "application/x-www-form-urlencoded"})
+        response = connection.getresponse()
 
-    def shutDown(self):
-        """Run when an engine shutdown is requested."""
-        self.executor.shutdown(wait=False)
+        self.check_response(response, obs, msgs, observation_detail)
+
+    def check_response(self, response, obs, msgs, observation_detail):
+        ''' Check the response. '''
+        now = time.time()
+        log.debug("Response code is: '%s' for %s", response.code, obs)
+
+        if response.code == 200:
+            for key, value in msgs.items():
+                if value:
+                    observation_detail[key]['last_sent_timestamp'] = now
+                    observation_detail[key]['counter'] = 0
+
+        else:
+            log.error("Received code '%s' for %s", response.code, obs)
+            if response.code >= 400 and response.code < 500:
+                self.client_error_timestamp = now
+                self.client_error_last_logged = now
+            if response.code >= 500 and response.code < 600:
+                self.server_error_timestamp = now
+            response_body = response.read().decode()
+            try:
+                response_dict = json.loads(response_body)
+                log.error("%s for %s", '\n'.join(response_dict['errors']), obs)
+            except json.JSONDecodeError as exception:
+                log.error("Unable to parse '%s' for %s.", exception.doc, obs)
+                log.error("Error at '%s', line: '%s' column: '%s' for %s",
+                          exception.pos, exception.lineno, exception.colno, obs)
 
 def main():  # pragma no cover
     """ The main routine. """
