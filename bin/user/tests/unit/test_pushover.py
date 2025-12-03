@@ -4,6 +4,9 @@
 #    See the file LICENSE.txt for your full rights.
 #
 
+# pylint: disable=wrong-import-order
+# pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
+
 import unittest
 import mock
 

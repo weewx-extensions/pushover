@@ -190,10 +190,9 @@ good-names=i,
            k,
            ex,
            Run,
-           # The following are for MQTTSubscribe
+           # The following are for pushover
            rc,
-           MQTTSubscribe,
-           ExampleMessageCallbackProvider,
+           SUT,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,
