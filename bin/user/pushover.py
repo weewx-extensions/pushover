@@ -434,6 +434,11 @@ class Pushover(StdService):
                                                                  data[observation])
                     if msgs['returned']:
                         title = f"Unexpected value for {observation}."
+                        # self.executor.submit(self._push_notification, event.packet)
+                        self.pusher.push_notification(obs, observation_detail, title, msgs)
+                        msgs = {}
+                        title = ''
+
                 if observation_detail.get('min', None):
                     msgs['min'] = self.check_min_value(observation_detail['name'],
                                                        observation_detail['label'],
@@ -441,6 +446,11 @@ class Pushover(StdService):
                                                        data[observation])
                     if msgs['min']:
                         title = f"Unexpected value for {observation}."
+                        # self.executor.submit(self._push_notification, event.packet)
+                        self.pusher.push_notification(obs, observation_detail, title, msgs)
+                        msgs = {}
+                        title = ''
+
                 if observation_detail.get('max', None):
                     msgs['max'] = self.check_max_value(observation_detail['name'],
                                                        observation_detail['label'],
@@ -448,6 +458,11 @@ class Pushover(StdService):
                                                        data[observation])
                     if msgs['max']:
                         title = f"Unexpected value for {observation}."
+                        # self.executor.submit(self._push_notification, event.packet)
+                        self.pusher.push_notification(obs, observation_detail, title, msgs)
+                        msgs = {}
+                        title = ''
+
                 if observation_detail.get('equal', None):
                     msgs['equal'] = self.check_equal_value(observation_detail['name'],
                                                            observation_detail['label'],
@@ -455,6 +470,10 @@ class Pushover(StdService):
                                                            data[observation])
                     if msgs['equal']:
                         title = f"Unexpected value for {observation}."
+                        # self.executor.submit(self._push_notification, event.packet)
+                        self.pusher.push_notification(obs, observation_detail, title, msgs)
+                        msgs = {}
+                        title = ''
 
             if observation not in data and observation_detail.get('missing', None):
                 msgs['missing'] = self.check_missing_value(observation,
@@ -463,10 +482,10 @@ class Pushover(StdService):
                                                            observation_detail['missing'])
                 if msgs['missing']:
                     title = f"Unexpected value for {observation}."
-
-            if title:
-                # self.executor.submit(self._push_notification, event.packet)
-                self.pusher.push_notification(obs, observation_detail, title, msgs)
+                    # self.executor.submit(self._push_notification, event.packet)
+                    self.pusher.push_notification(obs, observation_detail, title, msgs)
+                    msgs = {}
+                    title = ''
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
