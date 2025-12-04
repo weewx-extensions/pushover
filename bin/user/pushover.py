@@ -425,62 +425,78 @@ class Pushover(StdService):
             if observation in data and data[observation] is not None:
                 log.debug("Processing observation: %s%s", observation, observation_detail['label'])
                 # This means that if an observation 'goes missing', it needs a value that is not None to be marked as 'back'
+                # ToDo: I think it needs to be different than msgs['missing']
+                msg_type = 'returned'
+                detail_type = 'missing'
                 if observation_detail.get('missing', None):
-                    # ToDo: I think it needs to be different than msgs['missing']
-                    msgs['returned'] = self.check_value_returned(observation,
+                    msgs[msg_type] = self.check_value_returned(observation,
                                                                  observation_detail['name'],
                                                                  observation_detail['label'],
-                                                                 observation_detail['missing'],
+                                                                 observation_detail[detail_type],
                                                                  data[observation])
-                    if msgs['returned']:
+                    if msgs[msg_type]:
                         title = f"Unexpected value for {observation}."
                         # self.executor.submit(self._push_notification, event.packet)
                         self.pusher.push_notification(obs, observation_detail, title, msgs)
                         msgs = {}
                         title = ''
 
+                msg_type = 'min'
+                detail_type = msg_type
                 if observation_detail.get('min', None):
-                    msgs['min'] = self.check_min_value(observation_detail['name'],
+                    msgs[msg_type] = self.check_min_value(observation_detail['name'],
                                                        observation_detail['label'],
-                                                       observation_detail['min'],
+                                                       observation_detail[detail_type],
                                                        data[observation])
-                    if msgs['min']:
+                    if msgs[msg_type]:
                         title = f"Unexpected value for {observation}."
                         # self.executor.submit(self._push_notification, event.packet)
                         self.pusher.push_notification(obs, observation_detail, title, msgs)
                         msgs = {}
                         title = ''
 
+                msg_type = 'max'
+                detail_type = msg_type
                 if observation_detail.get('max', None):
-                    msgs['max'] = self.check_max_value(observation_detail['name'],
+                    msg_type = 'max'
+                    detail_type = msg_type
+                    msgs[msg_type] = self.check_max_value(observation_detail['name'],
                                                        observation_detail['label'],
-                                                       observation_detail['max'],
+                                                       observation_detail[detail_type],
                                                        data[observation])
-                    if msgs['max']:
+                    if msgs[msg_type]:
                         title = f"Unexpected value for {observation}."
                         # self.executor.submit(self._push_notification, event.packet)
                         self.pusher.push_notification(obs, observation_detail, title, msgs)
                         msgs = {}
                         title = ''
 
+                msg_type = 'equal'
+                detail_type = msg_type
                 if observation_detail.get('equal', None):
-                    msgs['equal'] = self.check_equal_value(observation_detail['name'],
+                    msg_type = 'equal'
+                    detail_type = msg_type
+                    msgs[msg_type] = self.check_equal_value(observation_detail['name'],
                                                            observation_detail['label'],
-                                                           observation_detail['equal'],
+                                                           observation_detail[detail_type],
                                                            data[observation])
-                    if msgs['equal']:
+                    if msgs[msg_type]:
                         title = f"Unexpected value for {observation}."
                         # self.executor.submit(self._push_notification, event.packet)
                         self.pusher.push_notification(obs, observation_detail, title, msgs)
                         msgs = {}
                         title = ''
 
+            msg_type = 'missing'
+            detail_type = msg_type
             if observation not in data and observation_detail.get('missing', None):
-                msgs['missing'] = self.check_missing_value(observation,
+                msg_type = 'missing'
+                detail_type = msg_type
+                msgs[msg_type] = self.check_missing_value(observation,
                                                            observation_detail['name'],
                                                            observation_detail['label'],
                                                            observation_detail['missing'])
-                if msgs['missing']:
+                if msgs[msg_type]:
                     title = f"Unexpected value for {observation}."
                     # self.executor.submit(self._push_notification, event.packet)
                     self.pusher.push_notification(obs, observation_detail, title, msgs)
@@ -569,12 +585,13 @@ class Pusher():
                             {"Content-type": "application/x-www-form-urlencoded"})
             response = connection.getresponse()
 
-            self.check_response(response, obs, msgs, observation_detail)
+            return self.check_response(response, obs, msgs, observation_detail)
         else:
             for key, value in msgs.items():
                 if value:
                     observation_detail[key]['last_sent_timestamp'] = now
                     observation_detail[key]['counter'] = 0
+            return True
 
     def check_response(self, response, obs, msgs, observation_detail):
         ''' Check the response. '''
@@ -586,7 +603,7 @@ class Pusher():
                 if value:
                     observation_detail[key]['last_sent_timestamp'] = now
                     observation_detail[key]['counter'] = 0
-
+            return True
         else:
             log.error("Received code '%s' for %s", response.code, obs)
             if response.code >= 400 and response.code < 500:
@@ -602,6 +619,7 @@ class Pusher():
                 log.error("Unable to parse '%s' for %s.", exception.doc, obs)
                 log.error("Error at '%s', line: '%s' column: '%s' for %s",
                           exception.pos, exception.lineno, exception.colno, obs)
+            return False
 
 def main():  # pragma no cover
     """ The main routine. """
