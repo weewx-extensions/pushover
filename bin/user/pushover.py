@@ -88,8 +88,8 @@ class Pushover(StdService):
             log.info("Pushover is not enabled, exiting")
             return
 
-        self.push = to_bool(service_dict.get('push', True))
-        self.log = to_bool(service_dict.get('log', True))
+        push = to_bool(service_dict.get('push', True))
+        logit = to_bool(service_dict.get('log', True))
 
         user_key = service_dict.get('user_key', None)
         app_token = service_dict.get('app_token', None)
@@ -129,7 +129,7 @@ class Pushover(StdService):
 
         self.missing_observations = {}
 
-        self.pusher = Pusher(server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period)
+        self.pusher = Pusher(server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period, push, logit)
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
@@ -163,14 +163,6 @@ class Pushover(StdService):
                 observation[value_type]['counter'] = 0
 
         return observation
-
-    def _logit(self, title, msgs):
-        msg = ''
-        for _, value in msgs.items():
-            if value:
-                msg += value
-        log.info(title)
-        log.info(msg)
 
     def check_min_value(self, name, label, observation_detail, value):
         ''' Check if an observation is less than a desired value.
@@ -426,7 +418,6 @@ class Pushover(StdService):
     def _process_data(self, data, observations):
         # log.debug("Processing record: %s", data)
         msgs = {}
-        now = int(time.time())
         for obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
             title = None
@@ -474,16 +465,8 @@ class Pushover(StdService):
                     title = f"Unexpected value for {observation}."
 
             if title:
-                if self.log:
-                    self._logit(title, msgs)
-                if self.push:
-                    # self.executor.submit(self._push_notification, event.packet)
-                    self.pusher.push_notification(obs, observation_detail, title, msgs)
-                else:
-                    for key, value in msgs.items():
-                        if value:
-                            observation_detail[key]['last_sent_timestamp'] = now
-                            observation_detail[key]['counter'] = 0
+                # self.executor.submit(self._push_notification, event.packet)
+                self.pusher.push_notification(obs, observation_detail, title, msgs)
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
@@ -501,17 +484,27 @@ class Pushover(StdService):
 
 class Pusher():
     """ Class to perform the pushover call."""
-    def __init__(self, server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period):
+    def __init__(self, server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period, push, logit):
         self.server = server
         self.api = api
         self.app_token = app_token
         self.user_key = user_key
         self.client_error_log_frequency = client_error_log_frequency
         self.server_error_wait_period = server_error_wait_period
+        self.push = push
+        self.log = logit
 
         self.client_error_timestamp = 0
         self.client_error_last_logged = 0
         self.server_error_timestamp = 0
+
+    def _logit(self, title, msgs):
+        msg = ''
+        for _, value in msgs.items():
+            if value:
+                msg += value
+        log.info(title)
+        log.info(msg)
 
     def throttle_notification(self):
         ''' Check if the call should be performed or throttled.'''
@@ -533,6 +526,7 @@ class Pusher():
 
     def push_notification(self, obs, observation_detail, title, msgs):
         ''' Perform the call.'''
+        now = time.time()
         msg = ''
         for _, value in msgs.items():
             if value:
@@ -540,18 +534,28 @@ class Pusher():
         log.debug("Title is '%s' for %s", title, obs)
         log.debug("Message is '%s' for %s", msg, obs)
         log.debug("Server is: '%s' for %s", self.server, obs)
-        connection = http.client.HTTPSConnection(f"{self.server}")
 
-        connection.request("POST",
-                           f"{self.api}",
-                           urllib.parse.urlencode({"token": self.app_token,
-                                                   "user": self.user_key,
-                                                   "message": msg,
-                                                   "title": title, }),
-                           {"Content-type": "application/x-www-form-urlencoded"})
-        response = connection.getresponse()
+        if self.log:
+            self._logit(title, msgs)
 
-        self.check_response(response, obs, msgs, observation_detail)
+        if self.push:
+            connection = http.client.HTTPSConnection(f"{self.server}")
+
+            connection.request("POST",
+                            f"{self.api}",
+                            urllib.parse.urlencode({"token": self.app_token,
+                                                    "user": self.user_key,
+                                                    "message": msg,
+                                                    "title": title, }),
+                            {"Content-type": "application/x-www-form-urlencoded"})
+            response = connection.getresponse()
+
+            self.check_response(response, obs, msgs, observation_detail)
+        else:
+            for key, value in msgs.items():
+                if value:
+                    observation_detail[key]['last_sent_timestamp'] = now
+                    observation_detail[key]['counter'] = 0
 
     def check_response(self, response, obs, msgs, observation_detail):
         ''' Check the response. '''
