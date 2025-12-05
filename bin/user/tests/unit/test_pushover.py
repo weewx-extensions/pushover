@@ -69,9 +69,9 @@ class TestObservationMissing(unittest.TestCase):
         SUT = Pushover(mock_engine, config)
 
         with mock.patch('user.pushover.log') as mock_logger:
-            mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg % args)
-            mock_logger.info = lambda msg, *args: print("INFO:  " + msg % args)
-            mock_logger.error = lambda msg, *args: print("ERROR: " + msg % args)
+            # mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg % args)
+            # mock_logger.info = lambda msg, *args: print("INFO:  " + msg % args)
+            # mock_logger.error = lambda msg, *args: print("ERROR: " + msg % args)
 
             msg = SUT.check_missing_value(observation,
                                           SUT.archive_observations[observation]['name'],
@@ -98,9 +98,9 @@ class TestObservationMissing(unittest.TestCase):
         SUT = Pushover(mock_engine, config)
 
         with mock.patch('user.pushover.log') as mock_logger:
-            mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg % args)
-            mock_logger.info = lambda msg, *args: print("INFO:  " + msg % args)
-            mock_logger.error = lambda msg, *args: print("ERROR: " + msg % args)
+            # mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg % args)
+            # mock_logger.info = lambda msg, *args: print("INFO:  " + msg % args)
+            # mock_logger.error = lambda msg, *args: print("ERROR: " + msg % args)
 
             # Missing notification has been 'sent'.
             # Setting to 1, ensures that time threshold has been met.
@@ -132,9 +132,9 @@ class TestObservationMissing(unittest.TestCase):
         SUT = Pushover(mock_engine, config)
 
         with mock.patch('user.pushover.log') as mock_logger:
-            mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg % args)
-            mock_logger.info = lambda msg, *args: print("INFO:  " + msg % args)
-            mock_logger.error = lambda msg, *args: print("ERROR: " + msg % args)
+            # mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg % args)
+            # mock_logger.info = lambda msg, *args: print("INFO:  " + msg % args)
+            # mock_logger.error = lambda msg, *args: print("ERROR: " + msg % args)
 
             # Missing notification has been 'sent'.
             # Setting to 1, ensures that time threshold has been met.
@@ -162,9 +162,9 @@ class TestObservationMissing(unittest.TestCase):
         SUT = Pushover(mock_engine, config)
 
         with mock.patch('user.pushover.log') as mock_logger:
-            mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg % args)
-            mock_logger.info = lambda msg, *args: print("INFO:  " + msg % args)
-            mock_logger.error = lambda msg, *args: print("ERROR: " + msg % args)
+            # mock_logger.debug = lambda msg, *args: print("DEBUG: " + msg % args)
+            # mock_logger.info = lambda msg, *args: print("INFO:  " + msg % args)
+            # mock_logger.error = lambda msg, *args: print("ERROR: " + msg % args)
 
             # Missing notification has been 'sent'.
             # Setting to 1, ensures that time threshold has NOT been met.
