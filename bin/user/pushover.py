@@ -88,16 +88,16 @@ class Pushover(StdService):
             log.info("Pushover is not enabled, exiting")
             return
 
-        self.push = to_bool(service_dict.get('push', True))
-        self.log = to_bool(service_dict.get('log', True))
+        push = to_bool(service_dict.get('push', True))
+        logit = to_bool(service_dict.get('log', True))
 
-        self.user_key = service_dict.get('user_key', None)
-        self.app_token = service_dict.get('app_token', None)
-        self.server = service_dict.get('server', 'api.pushover.net:443')
-        self.api = service_dict.get('api', '/1/messages.json')
+        user_key = service_dict.get('user_key', None)
+        app_token = service_dict.get('app_token', None)
+        server = service_dict.get('server', 'api.pushover.net:443')
+        api = service_dict.get('api', '/1/messages.json')
 
-        self.client_error_log_frequency = to_int(service_dict.get('client_error_log_frequency', 3600))
-        self.server_error_wait_period = to_int(service_dict.get('server_error_wait_period', 3600))
+        client_error_log_frequency = to_int(service_dict.get('client_error_log_frequency', 3600))
+        server_error_wait_period = to_int(service_dict.get('server_error_wait_period', 3600))
 
         count = to_int(service_dict.get('count', 10))
         wait_time = to_int(service_dict.get('wait_time', 3600))
@@ -127,10 +127,9 @@ class Pushover(StdService):
                                                                                 default_archive_return_notification)
         log.info("archive observations: %s", self.archive_observations)
 
-        self.client_error_timestamp = 0
-        self.client_error_last_logged = 0
-        self.server_error_timestamp = 0
         self.missing_observations = {}
+
+        self.pusher = Pusher(server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period, push, logit)
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
@@ -164,57 +163,6 @@ class Pushover(StdService):
                 observation[value_type]['counter'] = 0
 
         return observation
-
-    def _logit(self, title, msgs):
-        msg = ''
-        for _, value in msgs.items():
-            if value:
-                msg += value
-        log.info(title)
-        log.info(msg)
-
-    def _push_notification(self, obs, observation_detail, title, msgs):
-        msg = ''
-        for _, value in msgs.items():
-            if value:
-                msg += value
-        log.debug("Title is '%s' for %s", title, obs)
-        log.debug("Message is '%s' for %s", msg, obs)
-        log.debug("Server is: '%s' for %s", self.server, obs)
-        connection = http.client.HTTPSConnection(f"{self.server}")
-
-        connection.request("POST",
-                           f"{self.api}",
-                           urllib.parse.urlencode({"token": self.app_token,
-                                                   "user": self.user_key,
-                                                   "message": msg,
-                                                   "title": title, }),
-                           {"Content-type": "application/x-www-form-urlencoded"})
-        response = connection.getresponse()
-        now = int(time.time())
-        log.debug("Response code is: '%s' for %s", response.code, obs)
-
-        if response.code == 200:
-            for key, value in msgs.items():
-                if value:
-                    observation_detail[key]['last_sent_timestamp'] = now
-                    observation_detail[key]['counter'] = 0
-
-        else:
-            log.error("Received code '%s' for %s", response.code, obs)
-            if response.code >= 400 and response.code < 500:
-                self.client_error_timestamp = now
-                self.client_error_last_logged = now
-            if response.code >= 500 and response.code < 600:
-                self.server_error_timestamp = now
-            response_body = response.read().decode()
-            try:
-                response_dict = json.loads(response_body)
-                log.error("%s for %s", '\n'.join(response_dict['errors']), obs)
-            except json.JSONDecodeError as exception:
-                log.error("Unable to parse '%s' for %s.", exception.doc, obs)
-                log.error("Error at '%s', line: '%s' column: '%s' for %s",
-                          exception.pos, exception.lineno, exception.colno, obs)
 
     def check_min_value(self, name, label, observation_detail, value):
         ''' Check if an observation is less than a desired value.
@@ -469,67 +417,126 @@ class Pushover(StdService):
 
     def _process_data(self, data, observations):
         # log.debug("Processing record: %s", data)
-        msgs = {}
-        now = int(time.time())
+        now = time.time()
         for obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
-            title = None
+            title = ''
+            msg = ''
 
             if observation in data and data[observation] is not None:
                 log.debug("Processing observation: %s%s", observation, observation_detail['label'])
-                # This means that if an observation 'goes missing', it needs a value that is not None to be marked as 'back'
+                detail_type = 'missing'
                 if observation_detail.get('missing', None):
-                    # ToDo: I think it needs to be different than msgs['missing']
-                    msgs['returned'] = self.check_value_returned(observation,
-                                                                 observation_detail['name'],
-                                                                 observation_detail['label'],
-                                                                 observation_detail['missing'],
-                                                                 data[observation])
-                    if msgs['returned']:
+                    msg = self.check_value_returned(observation,
+                                                    observation_detail['name'],
+                                                    observation_detail['label'],
+                                                    observation_detail[detail_type],
+                                                    data[observation])
+                    if msg:
                         title = f"Unexpected value for {observation}."
+                        # This is when a missing value has returned
+                        # Therefore, do not reset sent timestamp or counter
+                        # self.executor.submit(self._push_notification, event.packet)
+                        self.pusher.push_notification(obs, title, msg)
+                        msg = ''
+                        title = ''
+
+                detail_type = 'min'
                 if observation_detail.get('min', None):
-                    msgs['min'] = self.check_min_value(observation_detail['name'],
-                                                       observation_detail['label'],
-                                                       observation_detail['min'],
-                                                       data[observation])
-                    if msgs['min']:
+                    msg = self.check_min_value(observation_detail['name'],
+                                               observation_detail['label'],
+                                               observation_detail[detail_type],
+                                               data[observation])
+                    if msg:
                         title = f"Unexpected value for {observation}."
+                        # self.executor.submit(self._push_notification, event.packet)
+                        if self.pusher.push_notification(obs, title, msg):
+                            observation_detail[detail_type]['last_sent_timestamp'] = now
+                            observation_detail[detail_type]['counter'] = 0
+                        msg = ''
+                        title = ''
+
+                detail_type = 'max'
                 if observation_detail.get('max', None):
-                    msgs['max'] = self.check_max_value(observation_detail['name'],
-                                                       observation_detail['label'],
-                                                       observation_detail['max'],
-                                                       data[observation])
-                    if msgs['max']:
+                    msg = self.check_max_value(observation_detail['name'],
+                                               observation_detail['label'],
+                                               observation_detail[detail_type],
+                                               data[observation])
+                    if msg:
                         title = f"Unexpected value for {observation}."
+                        # self.executor.submit(self._push_notification, event.packet)
+                        if self.pusher.push_notification(obs, title, msg):
+                            observation_detail[detail_type]['last_sent_timestamp'] = now
+                            observation_detail[detail_type]['counter'] = 0
+                        msg = ''
+                        title = ''
+
+                detail_type = 'equal'
                 if observation_detail.get('equal', None):
-                    msgs['equal'] = self.check_equal_value(observation_detail['name'],
-                                                           observation_detail['label'],
-                                                           observation_detail['equal'],
-                                                           data[observation])
-                    if msgs['equal']:
+                    msg = self.check_equal_value(observation_detail['name'],
+                                                 observation_detail['label'],
+                                                 observation_detail[detail_type],
+                                                 data[observation])
+                    if msg:
                         title = f"Unexpected value for {observation}."
+                        # self.executor.submit(self._push_notification, event.packet)
+                        if self.pusher.push_notification(obs, title, msg):
+                            observation_detail[detail_type]['last_sent_timestamp'] = now
+                            observation_detail[detail_type]['counter'] = 0
+                        msg = ''
+                        title = ''
 
+            detail_type = 'missing'
             if observation not in data and observation_detail.get('missing', None):
-                msgs['missing'] = self.check_missing_value(observation,
-                                                           observation_detail['name'],
-                                                           observation_detail['label'],
-                                                           observation_detail['missing'])
-                if msgs['missing']:
+                msg = self.check_missing_value(observation,
+                                               observation_detail['name'],
+                                               observation_detail['label'],
+                                               observation_detail['missing'])
+                if msg:
                     title = f"Unexpected value for {observation}."
-
-            if title:
-                if self.log:
-                    self._logit(title, msgs)
-                if self.push:
                     # self.executor.submit(self._push_notification, event.packet)
-                    self._push_notification(obs, observation_detail, title, msgs)
-                else:
-                    for key, value in msgs.items():
-                        if value:
-                            observation_detail[key]['last_sent_timestamp'] = now
-                            observation_detail[key]['counter'] = 0
+                    if self.pusher.push_notification(obs, title, msg):
+                        observation_detail[detail_type]['last_sent_timestamp'] = now
+                        observation_detail[detail_type]['counter'] = 0
+                    msg = ''
+                    title = ''
+
+    def new_archive_record(self, event):
+        """ Handle the new archive record event. """
+        if not self.pusher.throttle_notification():
+            self._process_data(event.record, self.archive_observations)
+
+    def new_loop_packet(self, event):
+        """ Handle the new loop packet event. """
+        if not self.pusher.throttle_notification():
+            self._process_data(event.packet, self.loop_observations)
+
+    def shutDown(self):
+        """Run when an engine shutdown is requested."""
+        self.executor.shutdown(wait=False)
+
+class Pusher():
+    """ Class to perform the pushover call."""
+    def __init__(self, server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period, push, logit):
+        self.server = server
+        self.api = api
+        self.app_token = app_token
+        self.user_key = user_key
+        self.client_error_log_frequency = client_error_log_frequency
+        self.server_error_wait_period = server_error_wait_period
+        self.push = push
+        self.log = logit
+
+        self.client_error_timestamp = 0
+        self.client_error_last_logged = 0
+        self.server_error_timestamp = 0
+
+    def _logit(self, title, msg):
+        log.info(title)
+        log.info(msg)
 
     def throttle_notification(self):
+        ''' Check if the call should be performed or throttled.'''
         now = int(time.time())
         if self.client_error_timestamp:
             if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
@@ -546,19 +553,53 @@ class Pushover(StdService):
         self.server_error_timestamp = 0
         return False
 
-    def new_archive_record(self, event):
-        """ Handle the new archive record event. """
-        if not self.throttle_notification():
-            self._process_data(event.record, self.archive_observations)
+    def push_notification(self, obs, title, msg):
+        ''' Perform the call.'''
+        log.debug("Title is '%s' for %s", title, obs)
+        log.debug("Message is '%s' for %s", msg, obs)
+        log.debug("Server is: '%s' for %s", self.server, obs)
 
-    def new_loop_packet(self, event):
-        """ Handle the new loop packet event. """
-        if not self.throttle_notification():
-            self._process_data(event.packet, self.loop_observations)
+        if self.log:
+            self._logit(title, msg)
 
-    def shutDown(self):
-        """Run when an engine shutdown is requested."""
-        self.executor.shutdown(wait=False)
+        if not self.push:
+            return True
+
+        connection = http.client.HTTPSConnection(f"{self.server}")
+
+        connection.request("POST",
+                           f"{self.api}",
+                           urllib.parse.urlencode({"token": self.app_token,
+                                                   "user": self.user_key,
+                                                   "message": msg,
+                                                   "title": title, }),
+                           {"Content-type": "application/x-www-form-urlencoded"})
+        response = connection.getresponse()
+
+        return self.check_response(response, obs)
+
+    def check_response(self, response, obs):
+        ''' Check the response. '''
+        now = time.time()
+        log.debug("Response code is: '%s' for %s", response.code, obs)
+
+        if response.code == 200:
+            return True
+
+        log.error("Received code '%s' for %s", response.code, obs)
+        if response.code >= 400 and response.code < 500:
+            self.client_error_timestamp = now
+            self.client_error_last_logged = now
+        if response.code >= 500 and response.code < 600:
+            self.server_error_timestamp = now
+        response_body = response.read().decode()
+        try:
+            response_dict = json.loads(response_body)
+            log.error("%s for %s", '\n'.join(response_dict['errors']), obs)
+        except json.JSONDecodeError as exception:
+            log.error("Unable to parse '%s' for %s.", exception.doc, obs)
+            log.error("Error at '%s', line: '%s' column: '%s' for %s", exception.pos, exception.lineno, exception.colno, obs)
+        return False
 
 def main():  # pragma no cover
     """ The main routine. """

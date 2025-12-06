@@ -1,0 +1,39 @@
+archive_observations {
+    observation: {
+        // A Descriptive name of this observation
+        // Default is the WeeWX name.
+        // Used to build the message that is sent.
+        // ToDo: Look at removing and just using the WeeWX name.
+        name: foo,
+        //
+        weewx_name: foo,
+        //
+        label: bar,
+        min: {},
+        max: {},
+        equal: {
+            // The value that the observation must equal.
+            value: 99,
+            // The threshold. When this is exceeded, a notification will be sent
+            count: 10,
+            // The time to wait before sending another notification
+            wait_time: 3600,
+            // When true, a notification is sent when the observation is 'within threshold'.
+            return_notification: true,
+
+
+
+            last_sent_timestamp: 0,
+            // The number of times the observation is not equal to 'value'.
+            counter: 0 ,
+            threshold_passed: {
+                // The timestamp of the first observation that is not 'within threshold'.
+                timestamp: now,
+                // The count of notifications sent.
+                // Note, might not actually have sent all? ToDo: do some research
+                notification_count: 1
+            }
+        },
+        missing: {}
+    }
+}
