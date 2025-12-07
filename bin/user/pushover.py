@@ -223,6 +223,7 @@ class Pushover(StdService):
     def check_max_value(self, name, label, observation_detail, value):
         ''' Check if an observation is greater than a desired value.
             Send a notification if time and cound thresholds have been met. '''
+        result = None
         now = int(time.time())
         log.debug("  Max check if %s is greater than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
@@ -233,9 +234,8 @@ class Pushover(StdService):
                   name,
                   label)
 
-        msg = ''
         if value > observation_detail['value']:
-            if 'threshold_passed' not in observation_detail:
+            if observation_detail['counter'] == 0:
                 observation_detail['threshold_passed'] = {}
                 observation_detail['threshold_passed']['timestamp'] = now
                 observation_detail['threshold_passed']['notification_count'] = 0
@@ -244,16 +244,12 @@ class Pushover(StdService):
             if time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     observation_detail['threshold_passed']['notification_count'] += 1
-                    msg = (f"At {format_timestamp(observation_detail['threshold_passed']['timestamp'])} {name}{label} "
-                           f"went above threshold of {observation_detail['value']}. Current value is {value}.\n")
+                    result = "outside"
         else:
-            if 'threshold_passed' in observation_detail:
+            if observation_detail['counter'] > 0:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     if observation_detail['return_notification']:
-                        msg = (f"{name}{label} over Max threshold at "
-                               f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
-                               f"is within threshold with value {value}, "
-                               f"{observation_detail['threshold_passed']['notification_count']} notifications sent.\n")
+                        result = "within"
                     else:
                         log.debug("    Notification not requested for %s%s going over Max threshold at %s and count of %s.",
                                   name,
@@ -272,9 +268,7 @@ class Pushover(StdService):
                 # But does not short circuit checking the count threshold
                 observation_detail['last_sent_timestamp'] = 1
 
-                del observation_detail['threshold_passed']
-
-        return msg
+        return result
 
     def check_equal_value(self, name, label, observation_detail, value):
         ''' Check if an observation is not equal to desired value.
@@ -453,16 +447,16 @@ class Pushover(StdService):
 
                 detail_type = 'max'
                 if observation_detail.get('max', None):
-                    msg = self.check_max_value(observation_detail['name'],
-                                               observation_detail['label'],
-                                               observation_detail[detail_type],
-                                               data[observation])
-                    if msg:
+                    result = self.check_max_value(observation_detail['name'],
+                                                  observation_detail['label'],
+                                                  observation_detail[detail_type],
+                                                  data[observation])
+                    if result:
+                        msg = self.pusher.build_message('max', result, data[observation], observation_detail)
                         title = f"Unexpected value for {observation}."
                         # self.executor.submit(self._push_notification, event.packet)
                         if self.pusher.push_notification(obs, title, msg):
                             observation_detail[detail_type]['last_sent_timestamp'] = now
-                            observation_detail[detail_type]['counter'] = 0
                         msg = ''
                         title = ''
 
@@ -479,7 +473,6 @@ class Pushover(StdService):
                         # self.executor.submit(self._push_notification, event.packet)
                         if self.pusher.push_notification(obs, title, msg):
                             observation_detail[detail_type]['last_sent_timestamp'] = now
-                            #observation_detail[detail_type]['counter'] = 0
                         msg = ''
                         title = ''
 
@@ -539,8 +532,21 @@ class Pusher():
                 'outside': ("At {date_time} {name}{label} is no longer equal to threshold of {threshold_value}. "
                             "Current value is {current_value}. {notifications_sent} sent.\n"),
                 'within': ("{name}{label} Not Equal at {date_time} is within threshold with value {current_value}, "
-                           "{notifications_sent} notifications sent.\n")
-            }
+                           "{notifications_sent} notifications sent.\n"),
+            },
+            'max': {
+                'outside': ("At {date_time} {name}{label} went above threshold of {threshold_value}. "
+                            "Current value is {current_value}. {notifications_sent} sent.\n"),
+                'within': ("{name}{label} over Max threshold at {date_time} is within threshold with value {current_value}, "
+                           "{notifications_sent} notifications sent.\n"),
+            },
+            'min': {
+                'outside': ("At {date_time} {name}{label} went below threshold of {threshold_value}. "
+                            "Current value is {current_value}. {notifications_sent} sent.\n"),
+                'within': ("{name}{label} over Min threshold at {date_time} is within threshold with value {current_value}, "
+                           "{notifications_sent} notifications sent.\n"),
+            },
+            'missing': {},
         }
 
         return msg_template[threshold_type][threshold].format(date_time=format_timestamp(observation_detail
