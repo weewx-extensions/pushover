@@ -341,13 +341,12 @@ class Pushover(StdService):
             self.missing_observations[observation]['notification_count'] = 0
 
         observation_detail['counter'] += 1
-        msg = ''
+
         if time_delta >= observation_detail['wait_time']:
             if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
                 self.missing_observations[observation]['notification_count'] += 1
-                msg = (f"{name}{label} missing at {format_timestamp(self.missing_observations[observation]['missing_time'])}, "
-                       f"{self.missing_observations[observation]['notification_count']} notifications sent.\n")
-        return msg
+                return 'missing'
+        return None
 
     def check_value_returned(self, observation, name, label, observation_detail, value):
         ''' Check if a notification should be sent when a missing value has returned. '''
@@ -431,7 +430,15 @@ class Pushover(StdService):
                                                   observation_detail[detail_type],
                                                   data[observation])
                     if result:
-                        msg = self.pusher.build_message('min', result, data[observation], observation_detail)
+                        msg = self.pusher.build_message('min',
+                                                        result,
+                                                        observation_detail['min']['value'],
+                                                        observation_detail['name'],
+                                                        observation_detail['label'],
+                                                        data[observation],
+                                                        observation_detail['min']['threshold_passed']['notification_count'],
+                                                        observation_detail['min']['threshold_passed']['timestamp'],
+                                                        observation_detail)
                         title = f"Unexpected value for {observation}."
                         # self.executor.submit(self._push_notification, event.packet)
                         if self.pusher.push_notification(obs, title, msg):
@@ -446,7 +453,15 @@ class Pushover(StdService):
                                                   observation_detail[detail_type],
                                                   data[observation])
                     if result:
-                        msg = self.pusher.build_message('max', result, data[observation], observation_detail)
+                        msg = self.pusher.build_message('max',
+                                                        result,
+                                                        observation_detail['max']['value'],
+                                                        observation_detail['name'],
+                                                        observation_detail['label'],
+                                                        data[observation],
+                                                        observation_detail['max']['threshold_passed']['notification_count'],
+                                                        observation_detail['max']['threshold_passed']['timestamp'],
+                                                        observation_detail)
                         title = f"Unexpected value for {observation}."
                         # self.executor.submit(self._push_notification, event.packet)
                         if self.pusher.push_notification(obs, title, msg):
@@ -462,7 +477,15 @@ class Pushover(StdService):
                                                     data[observation])
 
                     if result:
-                        msg = self.pusher.build_message('equal', result, data[observation], observation_detail)
+                        msg = self.pusher.build_message('equal',
+                                                        result,
+                                                        observation_detail['equal']['value'],
+                                                        observation_detail['name'],
+                                                        observation_detail['label'],
+                                                        data[observation],
+                                                        observation_detail['equal']['threshold_passed']['notification_count'],
+                                                        observation_detail['equal']['threshold_passed']['timestamp'],
+                                                        observation_detail)
                         title = f"Unexpected value for {observation}."
                         # self.executor.submit(self._push_notification, event.packet)
                         if self.pusher.push_notification(obs, title, msg):
@@ -472,11 +495,21 @@ class Pushover(StdService):
 
             detail_type = 'missing'
             if observation not in data and observation_detail.get('missing', None):
-                msg = self.check_missing_value(observation,
-                                               observation_detail['name'],
-                                               observation_detail['label'],
-                                               observation_detail['missing'])
-                if msg:
+                result = self.check_missing_value(observation,
+                                                  observation_detail['name'],
+                                                  observation_detail['label'],
+                                                  observation_detail['missing'])
+                if result:
+                    msg = self.pusher.build_message('missing',
+                                                    result,
+                                                    None,
+                                                    observation_detail['name'],
+                                                    observation_detail['label'],
+                                                    None,
+                                                    self.missing_observations[observation]['notification_count'],
+                                                    self.missing_observations[observation]['missing_time'],
+                                                    observation_detail)
+
                     title = f"Unexpected value for {observation}."
                     # self.executor.submit(self._push_notification, event.packet)
                     if self.pusher.push_notification(obs, title, msg):
@@ -519,7 +552,16 @@ class Pusher():
         log.info(title)
         log.info(msg)
 
-    def build_message(self, threshold_type, threshold, current_value, observation_detail):
+    def build_message(self,
+                      threshold_type,
+                      threshold,
+                      threshold_value,
+                      name,
+                      label,
+                      current_value,
+                      notifications_sent,
+                      date_time,
+                      observation_detail):
         """ Build a message based on threshold status."""
         msg_template = {
             'equal': {
@@ -540,21 +582,32 @@ class Pusher():
                 'within': ("{name}{label} over Min threshold at {date_time} is within threshold with value {current_value}, "
                            "{notifications_sent} notifications sent.\n"),
             },
-            'missing': {},
         }
 
-        return msg_template[threshold_type][threshold].format(date_time=format_timestamp(observation_detail
-                                                                                         [threshold_type]
-                                                                                         ['threshold_passed']
-                                                                                         ['timestamp']),
-                                                              name=observation_detail['name'],
-                                                              label=observation_detail['label'],
-                                                              threshold_value=observation_detail[threshold_type]['value'],
+        msg_missing_template = "{name}{label} missing at {date_time}, {notifications_sent} notifications sent.\n"
+
+        msg_returned_template = ("{name}{label} missing at {date_time} returned with value {current_value}, "
+                                 "{notifications_sent} notification sent.\n")
+
+        if threshold_type == 'missing':
+            return msg_missing_template.format(name=name,
+                                               label=label,
+                                               date_time=format_timestamp(date_time),
+                                               notifications_sent=notifications_sent)
+
+        if threshold_type == 'returned':
+            return msg_returned_template.format(name=name,
+                                                label=label,
+                                                date_time=format_timestamp(date_time),
+                                                current_value=current_value,
+                                                notifications_sent=notifications_sent)
+
+        return msg_template[threshold_type][threshold].format(date_time=format_timestamp(date_time),
+                                                              name=name,
+                                                              label=label,
+                                                              threshold_value=threshold_value,
                                                               current_value=current_value,
-                                                              notifications_sent=observation_detail
-                                                              [threshold_type]
-                                                              ['threshold_passed']
-                                                              ['notification_count']
+                                                              notifications_sent=notifications_sent
                                                               )
 
     def throttle_notification(self):
