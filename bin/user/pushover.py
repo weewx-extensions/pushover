@@ -169,6 +169,12 @@ class Pushover(StdService):
             Send a notification if time and cound thresholds have been met. '''
         result = None
         now = int(time.time())
+        result2 = {
+            'threshold_value': observation_detail['value'],
+            'name': name,
+            'label': label,
+            'current_value': value,
+        }
         log.debug("  Min check if %s is less than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta Min is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
@@ -188,12 +194,18 @@ class Pushover(StdService):
             if time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     observation_detail['threshold_passed']['notification_count'] += 1
-                    result = "outside"
+                    result2['type'] = 'outside'
+                    result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
+                    result2['date_time'] = observation_detail['threshold_passed']['timestamp']
+                    result = result2
         else:
             if observation_detail['counter'] > 0:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     if observation_detail['return_notification']:
-                        result = "within"
+                        result2['type'] = 'within'
+                        result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
+                        result2['date_time'] = observation_detail['threshold_passed']['timestamp']
+                        result = result2
                     else:
                         log.debug("    Notification not requested for %s%s going under Min threshold at %s and count of %s.",
                                   name,
@@ -219,6 +231,12 @@ class Pushover(StdService):
             Send a notification if time and cound thresholds have been met. '''
         result = None
         now = int(time.time())
+        result2 = {
+            'threshold_value': observation_detail['value'],
+            'name': name,
+            'label': label,
+            'current_value': value,
+        }
         log.debug("  Max check if %s is greater than %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta Max is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
@@ -238,12 +256,18 @@ class Pushover(StdService):
             if time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     observation_detail['threshold_passed']['notification_count'] += 1
-                    result = "outside"
+                    result2['type'] = 'outside'
+                    result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
+                    result2['date_time'] = observation_detail['threshold_passed']['timestamp']
+                    result = result2
         else:
             if observation_detail['counter'] > 0:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     if observation_detail['return_notification']:
-                        result = "within"
+                        result2['type'] = 'within'
+                        result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
+                        result2['date_time'] = observation_detail['threshold_passed']['timestamp']
+                        result = result2
                     else:
                         log.debug("    Notification not requested for %s%s going over Max threshold at %s and count of %s.",
                                   name,
@@ -269,6 +293,12 @@ class Pushover(StdService):
             Send a notification if time and cound thresholds have been met. '''
         result = None
         now = int(time.time())
+        result2 = {
+            'threshold_value': observation_detail['value'],
+            'name': name,
+            'label': label,
+            'current_value': value,
+        }
         log.debug("  Equal check if %s is equal to %s for %s%s", value, observation_detail['value'], name, label)
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
         log.debug("    Time delta Equal is %s and threshold is %s for %s%s",
@@ -292,12 +322,18 @@ class Pushover(StdService):
             if time_delta >= observation_detail['wait_time']:
                 if observation_detail['counter'] >= observation_detail['count']:
                     observation_detail['threshold_passed']['notification_count'] += 1
-                    result = "outside"
+                    result2['type'] = 'outside'
+                    result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
+                    result2['date_time'] = observation_detail['threshold_passed']['timestamp']
+                    result = result2
         else:
             if observation_detail['counter'] > 0:
                 if observation_detail['threshold_passed']['notification_count'] > 0:
                     if observation_detail['return_notification']:
-                        result = "within"
+                        result2['type'] = 'within'
+                        result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
+                        result2['date_time'] = observation_detail['threshold_passed']['timestamp']
+                        result = result2
                     else:
                         log.debug("    Notification not requested for %s%s being Not Equal at %s and count of %s.",
                                   name,
@@ -322,6 +358,12 @@ class Pushover(StdService):
         ''' Check if a notification should be sent for a missing value.'''
         log.debug("  Processing missing for %s%s", name, label)
         now = int(time.time())
+        result2 = {
+            'threshold_value': None,
+            'name': name,
+            'label': label,
+            'current_value': None,
+        }
         time_delta = now - observation_detail['last_sent_timestamp']
         log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s",
                   time_delta,
@@ -345,15 +387,25 @@ class Pushover(StdService):
         if time_delta >= observation_detail['wait_time']:
             if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
                 self.missing_observations[observation]['notification_count'] += 1
-                return 'missing'
+                result2['type'] = 'missing'
+                result2['notifications_sent'] = self.missing_observations[observation]['notification_count']
+                result2['date_time'] = self.missing_observations[observation]['missing_time']
+                result = result2
+                return result
         return None
 
-    def check_value_returned(self, observation, name, label, observation_detail):
+    def check_value_returned(self, observation, name, label, observation_detail, value):
         ''' Check if a notification should be sent when a missing value has returned. '''
         # ToDo: I think this needs work - think it is closer
         log.debug("  Processing returned value for observation %s%s", name, label)
         result = None
         now = int(time.time())
+        result2 = {
+            'threshold_value': None,
+            'name': name,
+            'label': label,
+            'current_value': value,
+        }
         time_delta = now - observation_detail['last_sent_timestamp']
         log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s",
                   time_delta,
@@ -369,7 +421,10 @@ class Pushover(StdService):
         if observation_detail['counter'] > 0:
             if self.missing_observations[observation]['notification_count'] > 0:
                 if observation_detail['return_notification']:
-                    result = 'returned'
+                    result2['type'] = 'returned'
+                    result2['notifications_sent'] = self.missing_observations[observation]['notification_count']
+                    result2['date_time'] = self.missing_observations[observation]['missing_time']
+                    result = result2
                 else:
                     log.debug("    Notification not requested for %s%s gone missing at %s and count of %s.",
                               name,
@@ -409,10 +464,11 @@ class Pushover(StdService):
                     result = self.check_value_returned(observation,
                                                        observation_detail['name'],
                                                        observation_detail['label'],
-                                                       observation_detail[detail_type])
+                                                       observation_detail[detail_type],
+                                                       data[observation])
                     if result:
                         msg = self.pusher.build_message('returned',
-                                                        result,
+                                                        result['type'],
                                                         None,
                                                         observation_detail['name'],
                                                         observation_detail['label'],
@@ -435,7 +491,7 @@ class Pushover(StdService):
                                                   data[observation])
                     if result:
                         msg = self.pusher.build_message('min',
-                                                        result,
+                                                        result['type'],
                                                         observation_detail['min']['value'],
                                                         observation_detail['name'],
                                                         observation_detail['label'],
@@ -457,7 +513,7 @@ class Pushover(StdService):
                                                   data[observation])
                     if result:
                         msg = self.pusher.build_message('max',
-                                                        result,
+                                                        result['type'],
                                                         observation_detail['max']['value'],
                                                         observation_detail['name'],
                                                         observation_detail['label'],
@@ -480,7 +536,7 @@ class Pushover(StdService):
 
                     if result:
                         msg = self.pusher.build_message('equal',
-                                                        result,
+                                                        result['type'],
                                                         observation_detail['equal']['value'],
                                                         observation_detail['name'],
                                                         observation_detail['label'],
@@ -502,7 +558,7 @@ class Pushover(StdService):
                                                   observation_detail['missing'])
                 if result:
                     msg = self.pusher.build_message('missing',
-                                                    result,
+                                                    result['type'],
                                                     None,
                                                     observation_detail['name'],
                                                     observation_detail['label'],
