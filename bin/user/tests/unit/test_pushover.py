@@ -182,7 +182,7 @@ class TestObservationMissing(unittest.TestCase):
             self.assertEqual(msg, "")
             self.assertIn(observation, SUT.missing_observations)
 
-@unittest.skip("refactoring")
+@unittest.skip("working")
 class TestObservationReturned(unittest.TestCase):
     def test_observation_not_missing(self):
         mock_engine = mock.Mock()
@@ -200,13 +200,13 @@ class TestObservationReturned(unittest.TestCase):
 
         SUT.missing_observations = {}
 
-        msg = SUT.check_value_returned(observation,
-                                       name,
-                                       label,
-                                       SUT.archive_observations[observation]['missing'],
-                                       value)
+        result = SUT.check_value_returned(observation,
+                                          name,
+                                          label,
+                                          SUT.archive_observations[observation]['missing'],
+                                          value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_missing_no_notification(self):
         mock_engine = mock.Mock()
@@ -230,13 +230,13 @@ class TestObservationReturned(unittest.TestCase):
             }
         }
 
-        msg = SUT.check_value_returned(observation,
-                                       name,
-                                       label,
-                                       SUT.archive_observations[observation]['missing'],
-                                       value)
+        result = SUT.check_value_returned(observation,
+                                          name,
+                                          label,
+                                          SUT.archive_observations[observation]['missing'],
+                                          value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_missing_with_notification(self):
         mock_engine = mock.Mock()
@@ -252,6 +252,16 @@ class TestObservationReturned(unittest.TestCase):
         config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
+        expected_result = {
+            'threshold_value': None,
+            'name': name,
+            'label': label,
+            'current_value': value,
+            'type': 'returned',
+            'notifications_sent': notification_count,
+            'date_time': now,
+        }
+
         SUT = Pushover(mock_engine, config)
 
         SUT.missing_observations = {
@@ -261,15 +271,15 @@ class TestObservationReturned(unittest.TestCase):
             }
         }
 
-        msg = SUT.check_value_returned(observation,
-                                       name,
-                                       label,
-                                       SUT.archive_observations[observation]['missing'],
-                                       value)
+        SUT.archive_observations[observation]['missing']['counter'] = 1
 
-        self.assertEqual(msg,
-                         (f"{name}{label} missing at {format_timestamp(now)} "
-                          f"returned with value {value}, {notification_count} notification sent.\n"))
+        result = SUT.check_value_returned(observation,
+                                          name,
+                                          label,
+                                          SUT.archive_observations[observation]['missing'],
+                                          value)
+
+        self.assertDictEqual(result, expected_result)
 
     def test_observation_missing_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -294,13 +304,13 @@ class TestObservationReturned(unittest.TestCase):
             }
         }
 
-        msg = SUT.check_value_returned(observation,
-                                       name,
-                                       label,
-                                       SUT.archive_observations[observation]['missing'],
-                                       value)
+        result = SUT.check_value_returned(observation,
+                                          name,
+                                          label,
+                                          SUT.archive_observations[observation]['missing'],
+                                          value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
 @unittest.skip("working")
 class TestObservationEqualCheck(unittest.TestCase):
