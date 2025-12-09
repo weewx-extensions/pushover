@@ -88,16 +88,7 @@ class Pushover(StdService):
             log.info("Pushover is not enabled, exiting")
             return
 
-        push = to_bool(service_dict.get('push', True))
-        logit = to_bool(service_dict.get('log', True))
-
-        user_key = service_dict.get('user_key', None)
-        app_token = service_dict.get('app_token', None)
-        server = service_dict.get('server', 'api.pushover.net:443')
-        api = service_dict.get('api', '/1/messages.json')
-
-        client_error_log_frequency = to_int(service_dict.get('client_error_log_frequency', 3600))
-        server_error_wait_period = to_int(service_dict.get('server_error_wait_period', 3600))
+        notifier_dict = service_dict.get('notifier', {})
 
         count = to_int(service_dict.get('count', 10))
         wait_time = to_int(service_dict.get('wait_time', 3600))
@@ -129,7 +120,7 @@ class Pushover(StdService):
 
         self.missing_observations = {}
 
-        self.pusher = Pusher(server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period, push, logit)
+        self.pusher = Pusher(notifier_dict)
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
@@ -531,15 +522,17 @@ class Pushover(StdService):
 
 class Pusher():
     """ Class to perform the pushover call."""
-    def __init__(self, server, api, app_token, user_key, client_error_log_frequency, server_error_wait_period, push, logit):
-        self.server = server
-        self.api = api
-        self.app_token = app_token
-        self.user_key = user_key
-        self.client_error_log_frequency = client_error_log_frequency
-        self.server_error_wait_period = server_error_wait_period
-        self.push = push
-        self.log = logit
+    def __init__(self, notifier_dict):
+        self.push = to_bool(notifier_dict.get('push', True))
+        self.log = to_bool(notifier_dict.get('log', True))
+
+        self.user_key = notifier_dict.get('user_key', None)
+        self.app_token = notifier_dict.get('app_token', None)
+        self.server = notifier_dict.get('server', 'api.pushover.net:443')
+        self.api = notifier_dict.get('api', '/1/messages.json')
+
+        self.client_error_log_frequency = to_int(notifier_dict.get('client_error_log_frequency', 3600))
+        self.server_error_wait_period = to_int(notifier_dict.get('server_error_wait_period', 3600))
 
         self.client_error_timestamp = 0
         self.client_error_last_logged = 0

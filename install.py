@@ -15,7 +15,7 @@ VERSION = '0.2.0'
 
 EXTENSION_CONFIG = """
 [Pushover]
-    
+
     # Whether the service is enabled or not.
     # Valid values: True or False
     # Default is True.
@@ -42,7 +42,7 @@ EXTENSION_CONFIG = """
         [[[REPLACE_ME]]]
             # A Descriptive name of this observation
             # Default is the WeeWX name.
-            #name = 
+            #name =
 
             # The time in seconds to wait before sending another notification.
             # This is used to throttle the number of notifications.

@@ -15,7 +15,7 @@ import random
 import string
 import time
 
-from user.pushover import Pushover, format_timestamp
+from user.pushover import Pushover
 
 def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)])
@@ -56,7 +56,6 @@ def setup_config_dict(binding,
 
     return config_dict
 
-@unittest.skip("refactoring")
 class TestObservationMissing(unittest.TestCase):
     def test_at_startup(self):
         mock_engine = mock.Mock()
@@ -64,8 +63,19 @@ class TestObservationMissing(unittest.TestCase):
         observation = random_string()
         label = random_string()
         name = observation
+
         config_dict = setup_config_dict('archive', observation, 'missing', label)
         config = configobj.ConfigObj(config_dict)
+
+        expected_result = {
+            'threshold_value': None,
+            'name': name,
+            'label': f" ({label})",
+            'current_value': None,
+            'type': 'missing',
+            'notifications_sent': 1,
+            'date_time': None,
+        }
 
         SUT = Pushover(mock_engine, config)
 
@@ -74,15 +84,14 @@ class TestObservationMissing(unittest.TestCase):
             # mock_logger.info = lambda msg, *args: print("INFO:  " + msg % args)
             # mock_logger.error = lambda msg, *args: print("ERROR: " + msg % args)
 
-            msg = SUT.check_missing_value(observation,
-                                          SUT.archive_observations[observation]['name'],
-                                          SUT.archive_observations[observation]['label'],
-                                          SUT.archive_observations[observation]['missing'])
+            result = SUT.check_missing_value(observation,
+                                             SUT.archive_observations[observation]['name'],
+                                             SUT.archive_observations[observation]['label'],
+                                             SUT.archive_observations[observation]['missing'])
 
-        self.assertEqual(msg,
-                         (f"{name} ({label}) missing at "
-                          f"{format_timestamp(SUT.missing_observations[observation]['missing_time'])}, "
-                          f"1 notifications sent.\n"))
+            expected_result['date_time'] = SUT.missing_observations[observation]['missing_time']
+
+        self.assertDictEqual(result, expected_result)
         self.assertIn(observation, SUT.missing_observations)
         self.assertIn('missing_time', SUT.missing_observations[observation])
 
@@ -93,8 +102,20 @@ class TestObservationMissing(unittest.TestCase):
         label = random_string()
         name = observation
         count = 10  # To do make random int
+        now = time.time()
+
         config_dict = setup_config_dict('archive', observation, 'missing', label, count=count)
         config = configobj.ConfigObj(config_dict)
+
+        expected_result = {
+            'threshold_value': None,
+            'name': name,
+            'label': f" ({label})",
+            'current_value': None,
+            'type': 'missing',
+            'notifications_sent': 1,
+            'date_time': now,
+        }
 
         SUT = Pushover(mock_engine, config)
 
@@ -106,18 +127,19 @@ class TestObservationMissing(unittest.TestCase):
             # Missing notification has been 'sent'.
             # Setting to 1, ensures that time threshold has been met.
             SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
+            SUT.missing_observations[observation] = {}
+            SUT.missing_observations[observation]['missing_time'] = now
+            SUT.missing_observations[observation]['notification_count'] = 0
+
             # Setting to ensure that count threshold has been met.
             SUT.archive_observations[observation]['missing']['counter'] = count - 1
 
-            msg = SUT.check_missing_value(observation,
-                                          SUT.archive_observations[observation]['name'],
-                                          SUT.archive_observations[observation]['label'],
-                                          SUT.archive_observations[observation]['missing'])
+            result = SUT.check_missing_value(observation,
+                                             SUT.archive_observations[observation]['name'],
+                                             SUT.archive_observations[observation]['label'],
+                                             SUT.archive_observations[observation]['missing'])
 
-            self.assertEqual(msg,
-                             (f"{name} ({label}) missing at "
-                              f"{format_timestamp(SUT.missing_observations[observation]['missing_time'])}, "
-                              f"1 notifications sent.\n"))
+            self.assertDictEqual(result, expected_result)
             self.assertIn(observation, SUT.missing_observations)
             self.assertIn('missing_time', SUT.missing_observations[observation])
 
@@ -143,12 +165,12 @@ class TestObservationMissing(unittest.TestCase):
             # Setting to ensure that count threshold has NOT been met.
             SUT.archive_observations[observation]['missing']['counter'] = 0
 
-            msg = SUT.check_missing_value(observation,
-                                          SUT.archive_observations[observation]['name'],
-                                          SUT.archive_observations[observation]['label'],
-                                          SUT.archive_observations[observation]['missing'])
+            result = SUT.check_missing_value(observation,
+                                             SUT.archive_observations[observation]['name'],
+                                             SUT.archive_observations[observation]['label'],
+                                             SUT.archive_observations[observation]['missing'])
 
-            self.assertEqual(msg, "")
+            self.assertIsNone(result)
             self.assertIn(observation, SUT.missing_observations)
 
     def test_past_count_threshold(self):
@@ -174,15 +196,13 @@ class TestObservationMissing(unittest.TestCase):
             # Setting to ensure that count threshold has been met.
             SUT.archive_observations[observation]['missing']['counter'] = count - 1
 
-            msg = SUT.check_missing_value(observation,
-                                          SUT.archive_observations[observation]['name'],
-                                          SUT.archive_observations[observation]['label'],
-                                          SUT.archive_observations[observation]['missing'])
+            result = SUT.check_missing_value(observation,
+                                             SUT.archive_observations[observation]['name'],
+                                             SUT.archive_observations[observation]['label'],
+                                             SUT.archive_observations[observation]['missing'])
 
-            self.assertEqual(msg, "")
-            self.assertIn(observation, SUT.missing_observations)
+            self.assertIsNone(result)
 
-@unittest.skip("refactoring")
 class TestObservationReturned(unittest.TestCase):
     def test_observation_not_missing(self):
         mock_engine = mock.Mock()
@@ -200,13 +220,13 @@ class TestObservationReturned(unittest.TestCase):
 
         SUT.missing_observations = {}
 
-        msg = SUT.check_value_returned(observation,
-                                       name,
-                                       label,
-                                       SUT.archive_observations[observation]['missing'],
-                                       value)
+        result = SUT.check_value_returned(observation,
+                                          name,
+                                          label,
+                                          SUT.archive_observations[observation]['missing'],
+                                          value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_missing_no_notification(self):
         mock_engine = mock.Mock()
@@ -230,13 +250,13 @@ class TestObservationReturned(unittest.TestCase):
             }
         }
 
-        msg = SUT.check_value_returned(observation,
-                                       name,
-                                       label,
-                                       SUT.archive_observations[observation]['missing'],
-                                       value)
+        result = SUT.check_value_returned(observation,
+                                          name,
+                                          label,
+                                          SUT.archive_observations[observation]['missing'],
+                                          value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_missing_with_notification(self):
         mock_engine = mock.Mock()
@@ -252,6 +272,16 @@ class TestObservationReturned(unittest.TestCase):
         config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
+        expected_result = {
+            'threshold_value': None,
+            'name': name,
+            'label': label,
+            'current_value': value,
+            'type': 'returned',
+            'notifications_sent': notification_count,
+            'date_time': now,
+        }
+
         SUT = Pushover(mock_engine, config)
 
         SUT.missing_observations = {
@@ -261,15 +291,15 @@ class TestObservationReturned(unittest.TestCase):
             }
         }
 
-        msg = SUT.check_value_returned(observation,
-                                       name,
-                                       label,
-                                       SUT.archive_observations[observation]['missing'],
-                                       value)
+        SUT.archive_observations[observation]['missing']['counter'] = 1
 
-        self.assertEqual(msg,
-                         (f"{name}{label} missing at {format_timestamp(now)} "
-                          f"returned with value {value}, {notification_count} notification sent.\n"))
+        result = SUT.check_value_returned(observation,
+                                          name,
+                                          label,
+                                          SUT.archive_observations[observation]['missing'],
+                                          value)
+
+        self.assertDictEqual(result, expected_result)
 
     def test_observation_missing_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -294,15 +324,14 @@ class TestObservationReturned(unittest.TestCase):
             }
         }
 
-        msg = SUT.check_value_returned(observation,
-                                       name,
-                                       label,
-                                       SUT.archive_observations[observation]['missing'],
-                                       value)
+        result = SUT.check_value_returned(observation,
+                                          name,
+                                          label,
+                                          SUT.archive_observations[observation]['missing'],
+                                          value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
-@unittest.skip("refactoring")
 class TestObservationEqualCheck(unittest.TestCase):
     def test_observation_equal_no_notification(self):
         mock_engine = mock.Mock()
@@ -328,12 +357,12 @@ class TestObservationEqualCheck(unittest.TestCase):
             time.time()
         SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
 
-        msg = SUT.check_equal_value(name,
-                                    label,
-                                    SUT.archive_observations[observation]['equal'],
-                                    value)
+        result = SUT.check_equal_value(name,
+                                       label,
+                                       SUT.archive_observations[observation]['equal'],
+                                       value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_equal_with_notification(self):
         mock_engine = mock.Mock()
@@ -354,22 +383,30 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
+        expected_result = {
+            'threshold_value': value,
+            'name': name,
+            'label': label,
+            'current_value': value,
+            'type': 'within',
+            'notifications_sent': notification_count,
+            'date_time': now,
+        }
+
         SUT = Pushover(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
         SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
             notification_count
+        SUT.archive_observations[observation]['equal']['counter'] = 1
 
-        msg = SUT.check_equal_value(name,
-                                    label,
-                                    SUT.archive_observations[observation]['equal'],
-                                    value)
+        result = SUT.check_equal_value(name,
+                                       label,
+                                       SUT.archive_observations[observation]['equal'],
+                                       value)
 
-        self.assertEqual(msg,
-                         (f"{name}{label} Not Equal at {format_timestamp(now)} "
-                          f"is within threshold with value {value}, "
-                          f"{notification_count} notifications sent.\n"))
+        self.assertDictEqual(result, expected_result)
 
     def test_observation_equal_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -398,12 +435,12 @@ class TestObservationEqualCheck(unittest.TestCase):
         SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
             notification_count
 
-        msg = SUT.check_equal_value(name,
-                                    label,
-                                    SUT.archive_observations[observation]['equal'],
-                                    value)
+        result = SUT.check_equal_value(name,
+                                       label,
+                                       SUT.archive_observations[observation]['equal'],
+                                       value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_not_equal_no_notification(self):
         mock_engine = mock.Mock()
@@ -425,12 +462,12 @@ class TestObservationEqualCheck(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        msg = SUT.check_equal_value(name,
-                                    label,
-                                    SUT.archive_observations[observation]['equal'],
-                                    record_value)
+        result = SUT.check_equal_value(name,
+                                       label,
+                                       SUT.archive_observations[observation]['equal'],
+                                       record_value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_not_equal_with_notification(self):
         mock_engine = mock.Mock()
@@ -441,6 +478,8 @@ class TestObservationEqualCheck(unittest.TestCase):
         name = observation
         value = 99  # ToDo: make random int
         record_value = 55  # ToDo: make random int
+        now = time.time()
+        notification_count = 0
 
         config_dict = setup_config_dict(binding,
                                         observation,
@@ -450,21 +489,31 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
+        expected_result = {
+            'threshold_value': value,
+            'name': name,
+            'label': label,
+            'current_value': record_value,
+            'type': 'outside',
+            'notifications_sent': notification_count + 1,
+            'date_time': now,
+        }
+
         SUT = Pushover(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['counter'] = \
             SUT.archive_observations[observation]['equal']['count'] + 1
+        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
-        msg = SUT.check_equal_value(name,
-                                    label,
-                                    SUT.archive_observations[observation]['equal'],
-                                    record_value)
+        result = SUT.check_equal_value(name,
+                                       label,
+                                       SUT.archive_observations[observation]['equal'],
+                                       record_value)
 
-        self.assertEqual(msg,
-                         (f"At {format_timestamp(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
-                          f"{name}{label} is no longer equal to threshold of {value}. Current value is {record_value}.\n"))
+        self.assertDictEqual(result, expected_result)
 
-@unittest.skip("refactoring")
 class TestObservationMaxCheck(unittest.TestCase):
     def test_observation_not_greater_no_notification(self):
         mock_engine = mock.Mock()
@@ -490,12 +539,12 @@ class TestObservationMaxCheck(unittest.TestCase):
             time.time()
         SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
 
-        msg = SUT.check_max_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  value)
+        result = SUT.check_max_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_not_greater_with_notification(self):
         mock_engine = mock.Mock()
@@ -516,22 +565,30 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
+        expected_result = {
+            'threshold_value': value,
+            'name': name,
+            'label': label,
+            'current_value': value,
+            'type': 'within',
+            'notifications_sent': notification_count,
+            'date_time': now,
+        }
+
         SUT = Pushover(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
         SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
             notification_count
+        SUT.archive_observations[observation]['equal']['counter'] = 1
 
-        msg = SUT.check_max_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  value)
+        result = SUT.check_max_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     value)
 
-        self.assertEqual(msg,
-                         (f"{name}{label} over Max threshold at {format_timestamp(now)} "
-                          f"is within threshold with value {value}, "
-                          f"{notification_count} notifications sent.\n"))
+        self.assertDictEqual(result, expected_result)
 
     def test_observation_not_greater_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -560,12 +617,12 @@ class TestObservationMaxCheck(unittest.TestCase):
         SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
             notification_count
 
-        msg = SUT.check_max_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  value)
+        result = SUT.check_max_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_greater_no_notification(self):
         mock_engine = mock.Mock()
@@ -587,12 +644,12 @@ class TestObservationMaxCheck(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        msg = SUT.check_max_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  record_value)
+        result = SUT.check_max_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     record_value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_greater_with_notification(self):
         mock_engine = mock.Mock()
@@ -603,6 +660,8 @@ class TestObservationMaxCheck(unittest.TestCase):
         name = observation
         value = 99  # ToDo: make random int
         record_value = 155  # ToDo: make random int
+        now = time.time()
+        notification_count = 0
 
         config_dict = setup_config_dict(binding,
                                         observation,
@@ -612,21 +671,32 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
+        expected_result = {
+            'threshold_value': value,
+            'name': name,
+            'label': label,
+            'current_value': record_value,
+            'type': 'outside',
+            'notifications_sent': notification_count + 1,
+            'date_time': now,
+        }
+
         SUT = Pushover(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['counter'] = \
             SUT.archive_observations[observation]['equal']['count'] + 1
 
-        msg = SUT.check_max_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  record_value)
+        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
-        self.assertEqual(msg,
-                         (f"At {format_timestamp(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
-                          f"{name}{label} went above threshold of {value}. Current value is {record_value}.\n"))
+        result = SUT.check_max_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     record_value)
 
-@unittest.skip("refactoring")
+        self.assertDictEqual(result, expected_result)
+
 class TestObservationMinCheck(unittest.TestCase):
     def test_observation_not_greater_no_notification(self):
         mock_engine = mock.Mock()
@@ -652,12 +722,12 @@ class TestObservationMinCheck(unittest.TestCase):
             time.time()
         SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
 
-        msg = SUT.check_min_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  value)
+        result = SUT.check_min_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_not_greater_with_notification(self):
         mock_engine = mock.Mock()
@@ -678,22 +748,30 @@ class TestObservationMinCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
+        expected_result = {
+            'threshold_value': value,
+            'name': name,
+            'label': label,
+            'current_value': value,
+            'type': 'within',
+            'notifications_sent': notification_count,
+            'date_time': now,
+        }
+
         SUT = Pushover(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
         SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
             notification_count
+        SUT.archive_observations[observation]['equal']['counter'] = 1
 
-        msg = SUT.check_min_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  value)
+        result = SUT.check_min_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     value)
 
-        self.assertEqual(msg,
-                         (f"{name}{label} under Min threshold at {format_timestamp(now)} "
-                          f"is within threshold with value {value}, "
-                          f"{notification_count} notifications sent.\n"))
+        self.assertDictEqual(result, expected_result)
 
     def test_observation_not_greater_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -722,12 +800,12 @@ class TestObservationMinCheck(unittest.TestCase):
         SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
             notification_count
 
-        msg = SUT.check_min_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  value)
+        result = SUT.check_min_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     value)
 
-        self.assertEqual(msg, '')
+        self.assertIsNone(result)
 
     def test_observation_less_no_notification(self):
         mock_engine = mock.Mock()
@@ -749,12 +827,12 @@ class TestObservationMinCheck(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        msg = SUT.check_min_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  record_value)
+        result = SUT.check_min_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     record_value)
 
-        self.assertEqual(msg, "")
+        self.assertIsNone(result)
 
     def test_observation_less_with_notification(self):
         mock_engine = mock.Mock()
@@ -765,6 +843,8 @@ class TestObservationMinCheck(unittest.TestCase):
         name = observation
         value = 99  # ToDo: make random int
         record_value = 55  # ToDo: make random int
+        now = time.time()
+        notification_count = 0
 
         config_dict = setup_config_dict(binding,
                                         observation,
@@ -774,19 +854,31 @@ class TestObservationMinCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
+        expected_result = {
+            'threshold_value': value,
+            'name': name,
+            'label': label,
+            'current_value': record_value,
+            'type': 'outside',
+            'notifications_sent': notification_count + 1,
+            'date_time': now,
+        }
+
         SUT = Pushover(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['counter'] = \
             SUT.archive_observations[observation]['equal']['count'] + 1
 
-        msg = SUT.check_min_value(name,
-                                  label,
-                                  SUT.archive_observations[observation]['equal'],
-                                  record_value)
+        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
-        self.assertEqual(msg,
-                         (f"At {format_timestamp(SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'])} "
-                          f"{name}{label} went below threshold of {value}. Current value is {record_value}.\n"))
+        result = SUT.check_min_value(name,
+                                     label,
+                                     SUT.archive_observations[observation]['equal'],
+                                     record_value)
+
+        self.assertDictEqual(result, expected_result)
 
 if __name__ == '__main__':
     # test_suite = unittest.TestSuite()
