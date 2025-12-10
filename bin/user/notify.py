@@ -9,7 +9,7 @@ Monitor that observation values are within a defined range.
 If a value is out of range, send a notification.
 
 Configuration:
-[Pushover]
+[Notify]
     # Whether the service is enabled or not.
     # Valid values: True or False
     # Default is True.
@@ -19,7 +19,7 @@ Configuration:
         # Controls if notifications are sent.
         # Valid values: True or False
         # Default is True.
-        push = True
+        send = True
 
         # Controls if notifications are written to the log.
         # Valid values: True or False
@@ -117,7 +117,7 @@ def format_timestamp(ts, format_str="%Y-%m-%d %H:%M:%S %Z"):
     return f"{time.strftime(format_str, time.localtime(ts))}"
 
 class Notify(StdService):
-    """ Manage sending Pushover notifications."""
+    """ Manage sending notifications."""
     def __init__(self, engine, config_dict):
         """Initialize an instance of Notify"""
         super().__init__(engine, config_dict)
@@ -161,7 +161,7 @@ class Notify(StdService):
 
         self.missing_observations = {}
 
-        self.pusher = Pusher(notifier_dict)
+        self.notifier = PushOver(notifier_dict)
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
@@ -499,8 +499,8 @@ class Notify(StdService):
                     if result:
                         # This is when a missing value has returned
                         # Therefore, do not reset sent timestamp
-                        # self.executor.submit(self._push_notification, event.packet)
-                        self.pusher.push_notification('returned', result)
+                        # self.executor.submit(self._send_notification, event.packet)
+                        self.notifier.send_notification('returned', result)
 
                 detail_type = 'min'
                 if observation_detail.get('min', None):
@@ -509,8 +509,8 @@ class Notify(StdService):
                                                   observation_detail[detail_type],
                                                   data[observation])
                     if result:
-                        # self.executor.submit(self._push_notification, event.packet)
-                        if self.pusher.push_notification('min', result):
+                        # self.executor.submit(self._send_notification, event.packet)
+                        if self.notifier.send_notification('min', result):
                             observation_detail[detail_type]['last_sent_timestamp'] = now
 
                 detail_type = 'max'
@@ -520,8 +520,8 @@ class Notify(StdService):
                                                   observation_detail[detail_type],
                                                   data[observation])
                     if result:
-                        # self.executor.submit(self._push_notification, event.packet)
-                        if self.pusher.push_notification('max', result):
+                        # self.executor.submit(self._send_notification, event.packet)
+                        if self.notifier.send_notification('max', result):
                             observation_detail[detail_type]['last_sent_timestamp'] = now
 
                 detail_type = 'equal'
@@ -532,8 +532,8 @@ class Notify(StdService):
                                                     data[observation])
 
                     if result:
-                        # self.executor.submit(self._push_notification, event.packet)
-                        if self.pusher.push_notification('equal', result):
+                        # self.executor.submit(self._send_notification, event.packet)
+                        if self.notifier.send_notification('equal', result):
                             observation_detail[detail_type]['last_sent_timestamp'] = now
 
             detail_type = 'missing'
@@ -543,28 +543,28 @@ class Notify(StdService):
                                                   observation_detail['label'],
                                                   observation_detail['missing'])
                 if result:
-                    # self.executor.submit(self._push_notification, event.packet)
-                    if self.pusher.push_notification('missing', result):
+                    # self.executor.submit(self._send_notification, event.packet)
+                    if self.notifier.send_notification('missing', result):
                         observation_detail[detail_type]['last_sent_timestamp'] = now
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
-        if not self.pusher.throttle_notification():
+        if not self.notifier.throttle_notification():
             self._process_data(event.record, self.archive_observations)
 
     def new_loop_packet(self, event):
         """ Handle the new loop packet event. """
-        if not self.pusher.throttle_notification():
+        if not self.notifier.throttle_notification():
             self._process_data(event.packet, self.loop_observations)
 
     def shutDown(self):
         """Run when an engine shutdown is requested."""
         self.executor.shutdown(wait=False)
 
-class Pusher():
+class PushOver():
     """ Class to perform the pushover call."""
     def __init__(self, notifier_dict):
-        self.push = to_bool(notifier_dict.get('push', True))
+        self.send = to_bool(notifier_dict.get('send', True))
         self.log = to_bool(notifier_dict.get('log', True))
 
         self.user_key = notifier_dict.get('user_key', None)
@@ -650,7 +650,7 @@ class Pusher():
         self.server_error_timestamp = 0
         return False
 
-    def push_notification(self, threshold_type, msg_data):
+    def send_notification(self, threshold_type, msg_data):
         ''' Perform the call.'''
         log.debug("Message data is '%s'", msg_data)
         log.debug("Server is: '%s' for %s", self.server, msg_data['name'])
@@ -660,7 +660,7 @@ class Pusher():
         if self.log:
             self._logit(title, msg)
 
-        if not self.push:
+        if not self.send:
             return True
 
         connection = http.client.HTTPSConnection(f"{self.server}")

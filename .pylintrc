@@ -190,7 +190,7 @@ good-names=i,
            k,
            ex,
            Run,
-           # The following are for pushover
+           # The following are for notify
            rc,
            SUT,
            _

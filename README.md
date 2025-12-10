@@ -17,7 +17,7 @@ After [installing](https://weewx.com/docs/5.0/utilities/weectl-extension/#instal
         # Controls if notifications are sent.
         # Valid values: True or False
         # Default is True.
-        push = True
+        send = True
 
         # Controls if notifications are written to the log.
         # Valid values: True or False
