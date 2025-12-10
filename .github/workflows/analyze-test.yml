@@ -8,7 +8,7 @@ jobs:
   analyze-test:
     uses: weewx-extensions/development_tools/.github/workflows/analyze-test.yml@v3
     with:
-      module-name: 'pushover'
+      module-name: 'notify'
       #pip-list: 'paho-mqtt'
       #package-list: 'mosquitto'
       function-test: false
