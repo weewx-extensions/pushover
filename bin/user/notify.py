@@ -6,8 +6,7 @@
 
 '''
 Monitor that observation values are within a defined range.
-If a value is out of range, send a notification via pushover.net
-See, https://pushover.net
+If a value is out of range, send a notification.
 
 Configuration:
 [Pushover]
@@ -117,17 +116,17 @@ def format_timestamp(ts, format_str="%Y-%m-%d %H:%M:%S %Z"):
     ''' Format a timestamp for human consumption. '''
     return f"{time.strftime(format_str, time.localtime(ts))}"
 
-class Pushover(StdService):
+class Notify(StdService):
     """ Manage sending Pushover notifications."""
     def __init__(self, engine, config_dict):
-        """Initialize an instance of Pushover"""
+        """Initialize an instance of Notify"""
         super().__init__(engine, config_dict)
 
-        service_dict = config_dict.get('Pushover', {})
+        service_dict = config_dict.get('Notify', {})
 
         enable = to_bool(service_dict.get('enable', True))
         if not enable:
-            log.info("Pushover is not enabled, exiting")
+            log.info("Notify is not enabled, exiting")
             return
 
         notifier_dict = service_dict.get('notifier', {})
@@ -638,7 +637,7 @@ class Pusher():
         now = int(time.time())
         if self.client_error_timestamp:
             if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
-                log.error("Fatal error occurred at %s, Pushover skipped.", format_timestamp(self.client_error_timestamp))
+                log.error("Fatal error occurred at %s, Notify skipped.", format_timestamp(self.client_error_timestamp))
                 self.client_error_last_logged = now
                 return True
 
@@ -733,25 +732,25 @@ def main():  # pragma no cover
               }
 
     # ToDo: Make enable an option
-    config_dict['Pushover']['enable'] = True
+    config_dict['Notify']['enable'] = True
 
-    pushover = Pushover(engine, config_dict)
+    notify = Notify(engine, config_dict)
 
     event = weewx.Event(weewx.NEW_LOOP_PACKET, packet=packet)
 
-    pushover.new_loop_packet(event)
+    notify.new_loop_packet(event)
 
     event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
-    pushover.new_archive_record(event)
+    notify.new_archive_record(event)
 
     packet = {'dateTime': int(time.time()),
               'mon_extraTemp6': 6,
               'mon_extraTemp1': 1,
               }
     event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
-    pushover.new_archive_record(event)
+    notify.new_archive_record(event)
 
-    pushover.shutDown()
+    notify.shutDown()
 
 if __name__ == '__main__':
     main()

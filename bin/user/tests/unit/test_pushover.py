@@ -15,7 +15,7 @@ import random
 import string
 import time
 
-from user.notify import Pushover
+from user.notify import Notify
 
 VERBOSE = False
 def mock_logger_debug(msg, *args):
@@ -41,7 +41,7 @@ def setup_config_dict(binding,
                       return_notification=True,
                       value=None):
     config_dict = {
-        'Pushover':
+        'Notify':
         {
             binding:
             {
@@ -59,11 +59,11 @@ def setup_config_dict(binding,
     }
 
     if label:
-        config_dict['Pushover'][binding][observation]['label'] = label
+        config_dict['Notify'][binding][observation]['label'] = label
     if name:
-        config_dict['Pushover'][binding][observation]['weewx_name'] = name
+        config_dict['Notify'][binding][observation]['weewx_name'] = name
     if value:
-        config_dict['Pushover'][binding][observation][check_type]['value'] = value
+        config_dict['Notify'][binding][observation][check_type]['value'] = value
 
     return config_dict
 
@@ -88,7 +88,7 @@ class TestObservationMissing(unittest.TestCase):
             'date_time': None,
         }
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         with mock.patch('user.notify.log') as mock_logger:
             mock_logger.debug = mock_logger_debug
@@ -128,7 +128,7 @@ class TestObservationMissing(unittest.TestCase):
             'date_time': now,
         }
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         with mock.patch('user.notify.log') as mock_logger:
             mock_logger.debug = mock_logger_debug
@@ -163,7 +163,7 @@ class TestObservationMissing(unittest.TestCase):
         config_dict = setup_config_dict('archive', observation, 'missing', label, count=count)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         with mock.patch('user.notify.log') as mock_logger:
             mock_logger.debug = mock_logger_debug
@@ -193,7 +193,7 @@ class TestObservationMissing(unittest.TestCase):
         config_dict = setup_config_dict('archive', observation, 'missing', label, count=count)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         with mock.patch('user.notify.log') as mock_logger:
             mock_logger.debug = mock_logger_debug
@@ -227,7 +227,7 @@ class TestObservationReturned(unittest.TestCase):
         config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.missing_observations = {}
 
@@ -252,7 +252,7 @@ class TestObservationReturned(unittest.TestCase):
         config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.missing_observations = {
             observation: {
@@ -293,7 +293,7 @@ class TestObservationReturned(unittest.TestCase):
             'date_time': now,
         }
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.missing_observations = {
             observation: {
@@ -326,7 +326,7 @@ class TestObservationReturned(unittest.TestCase):
         config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name, return_notification=False)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.missing_observations = {
             observation: {
@@ -361,7 +361,7 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
@@ -404,7 +404,7 @@ class TestObservationEqualCheck(unittest.TestCase):
             'date_time': now,
         }
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
@@ -439,7 +439,7 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         return_notification=False)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
@@ -471,7 +471,7 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         result = SUT.check_equal_value(name,
                                        label,
@@ -510,7 +510,7 @@ class TestObservationEqualCheck(unittest.TestCase):
             'date_time': now,
         }
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['counter'] = \
             SUT.archive_observations[observation]['equal']['count'] + 1
@@ -543,7 +543,7 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
@@ -586,7 +586,7 @@ class TestObservationMaxCheck(unittest.TestCase):
             'date_time': now,
         }
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
@@ -621,7 +621,7 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         return_notification=False)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
@@ -653,7 +653,7 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         result = SUT.check_max_value(name,
                                      label,
@@ -692,7 +692,7 @@ class TestObservationMaxCheck(unittest.TestCase):
             'date_time': now,
         }
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['counter'] = \
             SUT.archive_observations[observation]['equal']['count'] + 1
@@ -726,7 +726,7 @@ class TestObservationMinCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
@@ -769,7 +769,7 @@ class TestObservationMinCheck(unittest.TestCase):
             'date_time': now,
         }
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
@@ -804,7 +804,7 @@ class TestObservationMinCheck(unittest.TestCase):
                                         return_notification=False)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
         SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
@@ -836,7 +836,7 @@ class TestObservationMinCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         result = SUT.check_min_value(name,
                                      label,
@@ -875,7 +875,7 @@ class TestObservationMinCheck(unittest.TestCase):
             'date_time': now,
         }
 
-        SUT = Pushover(mock_engine, config)
+        SUT = Notify(mock_engine, config)
 
         SUT.archive_observations[observation]['equal']['counter'] = \
             SUT.archive_observations[observation]['equal']['count'] + 1

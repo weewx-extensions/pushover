@@ -12,7 +12,7 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Pushover",
+            "name": "Notify",
             "type": "debugpy",
             "request": "launch",
             "program": "bin/user/notify.py",

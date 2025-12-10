@@ -1,13 +1,13 @@
-# pushover
+# notify
 
 A WeeWX extension that sends alerts via [Pushover](https://pushover.net).
 
-## Installation and configuring `pushover`
+## Installation and configuring `notify`
 
-After [installing](https://weewx.com/docs/5.0/utilities/weectl-extension/#install-an-extension) `pushover`, edit the `Pushover` section in `weewx.conf` as needed.
+After [installing](https://weewx.com/docs/5.0/utilities/weectl-extension/#install-an-extension) `notify`, edit the `Notify` section in `weewx.conf` as needed.
 
 ```text
-[Pushover]
+[Notify]
     # Whether the service is enabled or not.
     # Valid values: True or False
     # Default is True.

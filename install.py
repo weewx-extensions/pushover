@@ -3,7 +3,7 @@
 #
 #    See the file LICENSE.txt for your full rights.
 #
-""" Installer for pushover extension. """
+""" Installer for notify extension. """
 
 from io import StringIO
 
@@ -14,7 +14,7 @@ from weecfg.extension import ExtensionInstaller
 VERSION = '0.2.0'
 
 EXTENSION_CONFIG = """
-[Pushover]
+[Notify]
 
     # Whether the service is enabled or not.
     # Valid values: True or False
@@ -67,15 +67,15 @@ EXTENSION_CONFIG = """
 
 def loader():
     """ Load and return the extension installer. """
-    return PushoverInstaller()
+    return NotifyInstaller()
 
-class PushoverInstaller(ExtensionInstaller):
+class NotifyInstaller(ExtensionInstaller):
     """ The extension installer. """
     def __init__(self):
         install_dict = {
             'version': VERSION,
-            'name': 'Pushover',
-            'description': 'Send alerts via pushover.',
+            'name': 'Notify',
+            'description': 'Monitor observation values and send alerts.',
             'author': "Rich Bell",
             'author_email': "bellrichm@gmail.com",
             'files': [
@@ -84,6 +84,6 @@ class PushoverInstaller(ExtensionInstaller):
         }
 
         install_dict['config'] = configobj.ConfigObj(StringIO(EXTENSION_CONFIG))
-        install_dict['restful_services'] = 'user.notify.Pushover'
+        install_dict['restful_services'] = 'user.notify.Notify'
 
         super().__init__(install_dict)
