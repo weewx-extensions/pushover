@@ -1,6 +1,6 @@
 # notify
 
-A WeeWX extension that sends alerts via [Pushover](https://pushover.net).
+A WeeWX extension that sends alerts.
 
 ## Installation and configuring `notify`
 
