@@ -67,9 +67,9 @@ Configuration:
 
             # A more human readable 'name' for this observation.
             # Default value is 'empty'/no value.
-            # label = 
+            # label =
 
-            # The type of noitifcation. 
+            # The type of notification.
             # Specify one or more.
             [[[[ 'min' or 'max' or 'equal' or 'missing']]]]
                 # The value to monitor.
@@ -83,7 +83,7 @@ Configuration:
                 # The number of times the threshold needs to be reached before sending a notification.
                 # The default is 10.
                 count = 10
-                            
+
                 # The time in seconds to wait before sending another notification.
                 # This is used to throttle the number of notifications.
                 # The default is 3600 seconds.
