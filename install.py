@@ -79,11 +79,11 @@ class PushoverInstaller(ExtensionInstaller):
             'author': "Rich Bell",
             'author_email': "bellrichm@gmail.com",
             'files': [
-                ('bin/user', ['bin/user/pushover.py']),
+                ('bin/user', ['bin/user/notify.py']),
             ]
         }
 
         install_dict['config'] = configobj.ConfigObj(StringIO(EXTENSION_CONFIG))
-        install_dict['restful_services'] = 'user.pushover.Pushover'
+        install_dict['restful_services'] = 'user.notify.Pushover'
 
         super().__init__(install_dict)

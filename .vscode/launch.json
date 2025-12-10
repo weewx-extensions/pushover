@@ -6,16 +6,16 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
         },
         {
             "name": "Pushover",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
-            "program": "bin/user/pushover.py",
+            "program": "bin/user/notify.py",
             "console": "integratedTerminal",
             "args": [
                 "--conf", "/home/richbell/weewx-data/run/weewx.conf",

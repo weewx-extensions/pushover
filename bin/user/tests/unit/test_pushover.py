@@ -15,7 +15,7 @@ import random
 import string
 import time
 
-from user.pushover import Pushover
+from user.notify import Pushover
 
 VERBOSE = False
 def mock_logger_debug(msg, *args):
@@ -90,7 +90,7 @@ class TestObservationMissing(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        with mock.patch('user.pushover.log') as mock_logger:
+        with mock.patch('user.notify.log') as mock_logger:
             mock_logger.debug = mock_logger_debug
             mock_logger.info = mock_logger_info
             mock_logger.error = mock_logger_error
@@ -130,7 +130,7 @@ class TestObservationMissing(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        with mock.patch('user.pushover.log') as mock_logger:
+        with mock.patch('user.notify.log') as mock_logger:
             mock_logger.debug = mock_logger_debug
             mock_logger.info = mock_logger_info
             mock_logger.error = mock_logger_error
@@ -165,7 +165,7 @@ class TestObservationMissing(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        with mock.patch('user.pushover.log') as mock_logger:
+        with mock.patch('user.notify.log') as mock_logger:
             mock_logger.debug = mock_logger_debug
             mock_logger.info = mock_logger_info
             mock_logger.error = mock_logger_error
@@ -195,7 +195,7 @@ class TestObservationMissing(unittest.TestCase):
 
         SUT = Pushover(mock_engine, config)
 
-        with mock.patch('user.pushover.log') as mock_logger:
+        with mock.patch('user.notify.log') as mock_logger:
             mock_logger.debug = mock_logger_debug
             mock_logger.info = mock_logger_info
             mock_logger.error = mock_logger_error
