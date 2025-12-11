@@ -504,6 +504,8 @@ class Notify(StdService):
         now = time.time()
         tasks = []
         task_names = {}
+        self.notifier.initialize()
+
         for _obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
 
@@ -580,6 +582,8 @@ class Notify(StdService):
                 if result:
                     task_names[task_name]['last_sent_timestamp'] = now
 
+        await self.notifier.finalize()
+
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
         if not self.notifier.throttle_notification():
@@ -598,6 +602,22 @@ class AbstractNotifier():
     ''' Abstract class for sending notifications.'''
     def __init__(self):
         self.name = self.__class__.__name__
+
+    async def initialize(self):
+        ''' Perform any final processing for this 'round'. '''
+        return
+
+    def throttle_notification(self):
+        ''' Check if the call should be performed or throttled.'''
+        raise NotImplementedError()
+
+    async def send_notification(self, _msg_data):
+        ''' Send the notification.'''
+        raise NotImplementedError('')
+
+    async def finalize(self):
+        ''' Perform any final processing for this 'round'. '''
+        return
 
 def main():  # pragma no cover
     """ The main routine. """

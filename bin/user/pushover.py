@@ -95,7 +95,6 @@ class PushOver(user.notify.AbstractNotifier):
                                                                            )
 
     def throttle_notification(self):
-        ''' Check if the call should be performed or throttled.'''
         now = int(time.time())
         if self.client_error_timestamp:
             if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
@@ -113,7 +112,6 @@ class PushOver(user.notify.AbstractNotifier):
         return False
 
     async def send_notification(self, msg_data):
-        ''' Perform the call.'''
         log.debug("Message data is '%s'", msg_data)
         log.debug("Server is: '%s' for %s", self.server, msg_data.name)
         title = f"Unexpected value for {msg_data.name}."
