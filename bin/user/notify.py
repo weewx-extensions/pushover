@@ -96,6 +96,7 @@ Configuration:
 '''
 
 import argparse
+import asyncio
 import logging
 import os
 import time
@@ -498,9 +499,11 @@ class Notify(StdService):
 
         return result
 
-    def _process_data(self, data, observations):
+    async def _process_data(self, data, observations):
         # log.debug("Processing record: %s", data)
         now = time.time()
+        tasks = []
+        task_names = {}
         for _obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
 
@@ -517,7 +520,8 @@ class Notify(StdService):
                         # This is when a missing value has returned
                         # Therefore, do not reset sent timestamp
                         # self.executor.submit(self._send_notification, event.packet)
-                        self.notifier.send_notification(result)
+                        task_name = f"{observation}-{detail_type}"
+                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'min'
                 if observation_detail.get('min', None):
@@ -527,8 +531,9 @@ class Notify(StdService):
                                                   data[observation])
                     if result:
                         # self.executor.submit(self._send_notification, event.packet)
-                        if self.notifier.send_notification(result):
-                            observation_detail[detail_type]['last_sent_timestamp'] = now
+                        task_name = f"{observation}-{detail_type}"
+                        task_names[task_name] = observation_detail[detail_type]
+                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'max'
                 if observation_detail.get('max', None):
@@ -538,8 +543,9 @@ class Notify(StdService):
                                                   data[observation])
                     if result:
                         # self.executor.submit(self._send_notification, event.packet)
-                        if self.notifier.send_notification(result):
-                            observation_detail[detail_type]['last_sent_timestamp'] = now
+                        task_name = f"{observation}-{detail_type}"
+                        task_names[task_name] = observation_detail[detail_type]
+                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'equal'
                 if observation_detail.get('equal', None):
@@ -550,8 +556,9 @@ class Notify(StdService):
 
                     if result:
                         # self.executor.submit(self._send_notification, event.packet)
-                        if self.notifier.send_notification(result):
-                            observation_detail[detail_type]['last_sent_timestamp'] = now
+                        task_name = f"{observation}-{detail_type}"
+                        task_names[task_name] = observation_detail[detail_type]
+                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
             detail_type = 'missing'
             if observation not in data and observation_detail.get('missing', None):
@@ -561,8 +568,16 @@ class Notify(StdService):
                                                   observation_detail['missing'])
                 if result:
                     # self.executor.submit(self._send_notification, event.packet)
-                    if self.notifier.send_notification(result):
-                        observation_detail[detail_type]['last_sent_timestamp'] = now
+                    task_name = f"{observation}-{detail_type}"
+                    task_names[task_name] = observation_detail[detail_type]
+                    tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
+
+        done, _pending = asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+        for task in done:
+            result = task.result()
+            task_name = task.get_name()
+            if result:
+                task_names[task_name]['last_sent_timestamp'] = now
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
