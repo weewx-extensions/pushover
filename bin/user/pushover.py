@@ -112,7 +112,7 @@ class PushOver(user.notify.AbstractNotifier):
         self.server_error_timestamp = 0
         return False
 
-    def send_notification(self, msg_data):
+    async def send_notification(self, msg_data):
         ''' Perform the call.'''
         log.debug("Message data is '%s'", msg_data)
         log.debug("Server is: '%s' for %s", self.server, msg_data.name)

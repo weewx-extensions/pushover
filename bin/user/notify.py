@@ -572,22 +572,23 @@ class Notify(StdService):
                     task_names[task_name] = observation_detail[detail_type]
                     tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
-        done, _pending = asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
-        for task in done:
-            result = task.result()
-            task_name = task.get_name()
-            if result:
-                task_names[task_name]['last_sent_timestamp'] = now
+        if tasks:
+            done, _pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            for task in done:
+                result = task.result()
+                task_name = task.get_name()
+                if result:
+                    task_names[task_name]['last_sent_timestamp'] = now
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
         if not self.notifier.throttle_notification():
-            self._process_data(event.record, self.archive_observations)
+            asyncio.run(self._process_data(event.record, self.archive_observations))
 
     def new_loop_packet(self, event):
         """ Handle the new loop packet event. """
         if not self.notifier.throttle_notification():
-            self._process_data(event.packet, self.loop_observations)
+            asyncio.run(self._process_data(event.packet, self.loop_observations))
 
     def shutDown(self):
         """Run when an engine shutdown is requested."""
