@@ -74,24 +74,24 @@ class PushOver(user.notify.AbstractNotifier):
                                  "{notifications_sent} notification sent.\n")
 
         if threshold_type == 'missing':
-            return msg_missing_template.format(name=msg_data['name'],
-                                               label=msg_data['label'],
-                                               date_time=format_timestamp(msg_data['date_time']),
-                                               notifications_sent=msg_data['notifications_sent'])
+            return msg_missing_template.format(name=msg_data.name,
+                                               label=msg_data.label,
+                                               date_time=format_timestamp(msg_data.date_time),
+                                               notifications_sent=msg_data.notifications_sent)
 
         if threshold_type == 'returned':
-            return msg_returned_template.format(name=msg_data['name'],
-                                                label=msg_data['label'],
-                                                date_time=format_timestamp(msg_data['date_time']),
-                                                current_value=msg_data['current_value'],
-                                                notifications_sent=msg_data['notifications_sent'])
+            return msg_returned_template.format(name=msg_data.name,
+                                                label=msg_data.label,
+                                                date_time=format_timestamp(msg_data.date_time),
+                                                current_value=msg_data.current_value,
+                                                notifications_sent=msg_data.notifications_sent)
 
-        return msg_template[threshold_type][msg_data['type']].format(date_time=format_timestamp(msg_data['date_time']),
-                                                                     name=msg_data['name'],
-                                                                     label=msg_data['label'],
-                                                                     threshold_value=msg_data['threshold_value'],
-                                                                     current_value=msg_data['current_value'],
-                                                                     notifications_sent=msg_data['notifications_sent']
+        return msg_template[threshold_type][msg_data.type].format(date_time=format_timestamp(msg_data.date_time),
+                                                                     name=msg_data.name,
+                                                                     label=msg_data.label,
+                                                                     threshold_value=msg_data.threshold_value,
+                                                                     current_value=msg_data.current_value,
+                                                                     notifications_sent=msg_data.notifications_sent
                                                                      )
 
     def throttle_notification(self):
@@ -115,8 +115,8 @@ class PushOver(user.notify.AbstractNotifier):
     def send_notification(self, threshold_type, msg_data):
         ''' Perform the call.'''
         log.debug("Message data is '%s'", msg_data)
-        log.debug("Server is: '%s' for %s", self.server, msg_data['name'])
-        title = f"Unexpected value for {msg_data['name']}."
+        log.debug("Server is: '%s' for %s", self.server, msg_data.name)
+        title = f"Unexpected value for {msg_data.name}."
         msg = self.build_message(threshold_type, msg_data)
 
         if self.log:
@@ -136,7 +136,7 @@ class PushOver(user.notify.AbstractNotifier):
                            {"Content-type": "application/x-www-form-urlencoded"})
         response = connection.getresponse()
 
-        return self.check_response(response, msg_data['name'])
+        return self.check_response(response, msg_data.name)
 
     def check_response(self, response, obs):
         ''' Check the response. '''

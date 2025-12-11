@@ -15,6 +15,8 @@ import random
 import string
 import time
 
+from collections import namedtuple
+
 from user.notify import Notify
 
 VERBOSE = False
@@ -78,7 +80,7 @@ class TestObservationMissing(unittest.TestCase):
         config_dict = setup_config_dict('archive', observation, 'missing', label)
         config = configobj.ConfigObj(config_dict)
 
-        expected_result = {
+        expected_dict = {
             'threshold_value': None,
             'name': name,
             'label': f" ({label})",
@@ -100,9 +102,10 @@ class TestObservationMissing(unittest.TestCase):
                                              SUT.archive_observations[observation]['label'],
                                              SUT.archive_observations[observation]['missing'])
 
-            expected_result['date_time'] = SUT.missing_observations[observation]['missing_time']
+            expected_dict['date_time'] = SUT.missing_observations[observation]['missing_time']
+            expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-        self.assertDictEqual(result, expected_result)
+        self.assertEqual(result, expected_result)
         self.assertIn(observation, SUT.missing_observations)
         self.assertIn('missing_time', SUT.missing_observations[observation])
 
@@ -118,7 +121,7 @@ class TestObservationMissing(unittest.TestCase):
         config_dict = setup_config_dict('archive', observation, 'missing', label, count=count)
         config = configobj.ConfigObj(config_dict)
 
-        expected_result = {
+        expected_dict = {
             'threshold_value': None,
             'name': name,
             'label': f" ({label})",
@@ -127,6 +130,7 @@ class TestObservationMissing(unittest.TestCase):
             'notifications_sent': 1,
             'date_time': now,
         }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
         SUT = Notify(mock_engine, config)
 
@@ -150,7 +154,7 @@ class TestObservationMissing(unittest.TestCase):
                                              SUT.archive_observations[observation]['label'],
                                              SUT.archive_observations[observation]['missing'])
 
-            self.assertDictEqual(result, expected_result)
+            self.assertEqual(result, expected_result)
             self.assertIn(observation, SUT.missing_observations)
             self.assertIn('missing_time', SUT.missing_observations[observation])
 
@@ -283,7 +287,7 @@ class TestObservationReturned(unittest.TestCase):
         config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
-        expected_result = {
+        expected_dict = {
             'threshold_value': None,
             'name': name,
             'label': label,
@@ -292,6 +296,7 @@ class TestObservationReturned(unittest.TestCase):
             'notifications_sent': notification_count,
             'date_time': now,
         }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
         SUT = Notify(mock_engine, config)
 
@@ -310,7 +315,7 @@ class TestObservationReturned(unittest.TestCase):
                                           SUT.archive_observations[observation]['missing'],
                                           value)
 
-        self.assertDictEqual(result, expected_result)
+        self.assertEqual(result, expected_result)
 
     def test_observation_missing_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -394,7 +399,7 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        expected_result = {
+        expected_dict = {
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -403,6 +408,7 @@ class TestObservationEqualCheck(unittest.TestCase):
             'notifications_sent': notification_count,
             'date_time': now,
         }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
         SUT = Notify(mock_engine, config)
 
@@ -417,7 +423,7 @@ class TestObservationEqualCheck(unittest.TestCase):
                                        SUT.archive_observations[observation]['equal'],
                                        value)
 
-        self.assertDictEqual(result, expected_result)
+        self.assertEqual(result, expected_result)
 
     def test_observation_equal_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -500,7 +506,7 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        expected_result = {
+        expected_dict = {
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -509,6 +515,7 @@ class TestObservationEqualCheck(unittest.TestCase):
             'notifications_sent': notification_count + 1,
             'date_time': now,
         }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
         SUT = Notify(mock_engine, config)
 
@@ -523,7 +530,7 @@ class TestObservationEqualCheck(unittest.TestCase):
                                        SUT.archive_observations[observation]['equal'],
                                        record_value)
 
-        self.assertDictEqual(result, expected_result)
+        self.assertEqual(result, expected_result)
 
 class TestObservationMaxCheck(unittest.TestCase):
     def test_observation_not_greater_no_notification(self):
@@ -576,7 +583,7 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        expected_result = {
+        expected_dict = {
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -585,6 +592,7 @@ class TestObservationMaxCheck(unittest.TestCase):
             'notifications_sent': notification_count,
             'date_time': now,
         }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
         SUT = Notify(mock_engine, config)
 
@@ -599,7 +607,7 @@ class TestObservationMaxCheck(unittest.TestCase):
                                      SUT.archive_observations[observation]['equal'],
                                      value)
 
-        self.assertDictEqual(result, expected_result)
+        self.assertEqual(result, expected_result)
 
     def test_observation_not_greater_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -682,7 +690,7 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        expected_result = {
+        expected_dict = {
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -691,6 +699,7 @@ class TestObservationMaxCheck(unittest.TestCase):
             'notifications_sent': notification_count + 1,
             'date_time': now,
         }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
         SUT = Notify(mock_engine, config)
 
@@ -706,7 +715,7 @@ class TestObservationMaxCheck(unittest.TestCase):
                                      SUT.archive_observations[observation]['equal'],
                                      record_value)
 
-        self.assertDictEqual(result, expected_result)
+        self.assertEqual(result, expected_result)
 
 class TestObservationMinCheck(unittest.TestCase):
     def test_observation_not_greater_no_notification(self):
@@ -759,7 +768,7 @@ class TestObservationMinCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        expected_result = {
+        expected_dict = {
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -768,6 +777,7 @@ class TestObservationMinCheck(unittest.TestCase):
             'notifications_sent': notification_count,
             'date_time': now,
         }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
         SUT = Notify(mock_engine, config)
 
@@ -782,7 +792,7 @@ class TestObservationMinCheck(unittest.TestCase):
                                      SUT.archive_observations[observation]['equal'],
                                      value)
 
-        self.assertDictEqual(result, expected_result)
+        self.assertEqual(result, expected_result)
 
     def test_observation_not_greater_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -865,7 +875,7 @@ class TestObservationMinCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        expected_result = {
+        expected_dict = {
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -874,6 +884,7 @@ class TestObservationMinCheck(unittest.TestCase):
             'notifications_sent': notification_count + 1,
             'date_time': now,
         }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
         SUT = Notify(mock_engine, config)
 
@@ -889,7 +900,7 @@ class TestObservationMinCheck(unittest.TestCase):
                                      SUT.archive_observations[observation]['equal'],
                                      record_value)
 
-        self.assertDictEqual(result, expected_result)
+        self.assertEqual(result, expected_result)
 
 if __name__ == '__main__':
     # test_suite = unittest.TestSuite()

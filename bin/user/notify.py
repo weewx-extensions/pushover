@@ -99,6 +99,7 @@ import argparse
 import logging
 import os
 import time
+from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
 
 import configobj
@@ -256,6 +257,9 @@ class Notify(StdService):
                 # But does not short circuit checking the count threshold
                 observation_detail['last_sent_timestamp'] = 1
 
+        if result:
+            return namedtuple('Result', result.keys())(**result)
+
         return result
 
     def check_max_value(self, name, label, observation_detail, value):
@@ -317,6 +321,10 @@ class Notify(StdService):
                 # Setting to 1 is a hack, this allows the time threshold to be met
                 # But does not short circuit checking the count threshold
                 observation_detail['last_sent_timestamp'] = 1
+
+
+        if result:
+            return namedtuple('Result', result.keys())(**result)
 
         return result
 
@@ -384,6 +392,10 @@ class Notify(StdService):
                 # But does not short circuit checking the count threshold
                 observation_detail['last_sent_timestamp'] = 1
 
+
+        if result:
+            return namedtuple('Result', result.keys())(**result)
+
         return result
 
     def check_missing_value(self, observation, name, label, observation_detail):
@@ -422,8 +434,7 @@ class Notify(StdService):
                 result2['type'] = 'missing'
                 result2['notifications_sent'] = self.missing_observations[observation]['notification_count']
                 result2['date_time'] = self.missing_observations[observation]['missing_time']
-                result = result2
-                return result
+                return namedtuple('Result', result2.keys())(**result2)
         return None
 
     def check_value_returned(self, observation, name, label, observation_detail, value):
@@ -478,6 +489,9 @@ class Notify(StdService):
         # In otherwords, a value has been find since WeeWX started....
         if observation_detail['last_sent_timestamp'] == 0:
             observation_detail['last_sent_timestamp'] = 1
+
+        if result:
+            return namedtuple('Result', result.keys())(**result)
 
         return result
 
