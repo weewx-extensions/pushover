@@ -579,7 +579,7 @@ class Notify(StdService):
             for task in done:
                 result = task.result()
                 task_name = task.get_name()
-                if result:
+                if task_name in task_names and result:
                     task_names[task_name]['last_sent_timestamp'] = now
 
         await self.notifier.finalize()
