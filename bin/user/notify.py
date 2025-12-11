@@ -522,7 +522,7 @@ class Notify(StdService):
                         # This is when a missing value has returned
                         # Therefore, do not reset sent timestamp
                         # self.executor.submit(self._send_notification, event.packet)
-                        task_name = f"{observation}-{detail_type}"
+                        task_name = f"{observation}-{detail_type}-{now}"
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'min'
@@ -533,7 +533,7 @@ class Notify(StdService):
                                                   data[observation])
                     if result:
                         # self.executor.submit(self._send_notification, event.packet)
-                        task_name = f"{observation}-{detail_type}"
+                        task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
@@ -545,7 +545,7 @@ class Notify(StdService):
                                                   data[observation])
                     if result:
                         # self.executor.submit(self._send_notification, event.packet)
-                        task_name = f"{observation}-{detail_type}"
+                        task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
@@ -558,7 +558,7 @@ class Notify(StdService):
 
                     if result:
                         # self.executor.submit(self._send_notification, event.packet)
-                        task_name = f"{observation}-{detail_type}"
+                        task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
@@ -570,7 +570,7 @@ class Notify(StdService):
                                                   observation_detail['missing'])
                 if result:
                     # self.executor.submit(self._send_notification, event.packet)
-                    task_name = f"{observation}-{detail_type}"
+                    task_name = f"{observation}-{detail_type}-{now}"
                     task_names[task_name] = observation_detail[detail_type]
                     tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
