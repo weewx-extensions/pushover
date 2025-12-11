@@ -45,7 +45,7 @@ class PushOver(user.notify.AbstractNotifier):
         log.info(title)
         log.info(msg)
 
-    def build_message(self, threshold_type, msg_data):
+    def build_message(self, msg_data):
         """ Build a message based on threshold status."""
         msg_template = {
             'equal': {
@@ -73,26 +73,26 @@ class PushOver(user.notify.AbstractNotifier):
         msg_returned_template = ("{name}{label} missing at {date_time} returned with value {current_value}, "
                                  "{notifications_sent} notification sent.\n")
 
-        if threshold_type == 'missing':
+        if msg_data.threshold_type == 'missing' and msg_data.type == 'outside':
             return msg_missing_template.format(name=msg_data.name,
                                                label=msg_data.label,
                                                date_time=format_timestamp(msg_data.date_time),
                                                notifications_sent=msg_data.notifications_sent)
 
-        if threshold_type == 'returned':
+        if msg_data.threshold_type == 'missing' and msg_data.type == 'within':
             return msg_returned_template.format(name=msg_data.name,
                                                 label=msg_data.label,
                                                 date_time=format_timestamp(msg_data.date_time),
                                                 current_value=msg_data.current_value,
                                                 notifications_sent=msg_data.notifications_sent)
 
-        return msg_template[threshold_type][msg_data.type].format(date_time=format_timestamp(msg_data.date_time),
-                                                                     name=msg_data.name,
-                                                                     label=msg_data.label,
-                                                                     threshold_value=msg_data.threshold_value,
-                                                                     current_value=msg_data.current_value,
-                                                                     notifications_sent=msg_data.notifications_sent
-                                                                     )
+        return msg_template[msg_data.threshold_type][msg_data.type].format(date_time=format_timestamp(msg_data.date_time),
+                                                                           name=msg_data.name,
+                                                                           label=msg_data.label,
+                                                                           threshold_value=msg_data.threshold_value,
+                                                                           current_value=msg_data.current_value,
+                                                                           notifications_sent=msg_data.notifications_sent
+                                                                           )
 
     def throttle_notification(self):
         ''' Check if the call should be performed or throttled.'''
@@ -112,12 +112,12 @@ class PushOver(user.notify.AbstractNotifier):
         self.server_error_timestamp = 0
         return False
 
-    def send_notification(self, threshold_type, msg_data):
+    def send_notification(self, msg_data):
         ''' Perform the call.'''
         log.debug("Message data is '%s'", msg_data)
         log.debug("Server is: '%s' for %s", self.server, msg_data.name)
         title = f"Unexpected value for {msg_data.name}."
-        msg = self.build_message(threshold_type, msg_data)
+        msg = self.build_message(msg_data)
 
         if self.log:
             self._logit(title, msg)

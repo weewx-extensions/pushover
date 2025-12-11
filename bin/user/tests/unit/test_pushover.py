@@ -81,11 +81,12 @@ class TestObservationMissing(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
+            'threshold_type': 'missing',
             'threshold_value': None,
             'name': name,
             'label': f" ({label})",
             'current_value': None,
-            'type': 'missing',
+            'type': 'outside',
             'notifications_sent': 1,
             'date_time': None,
         }
@@ -122,11 +123,12 @@ class TestObservationMissing(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
+            'threshold_type': 'missing',
             'threshold_value': None,
             'name': name,
             'label': f" ({label})",
             'current_value': None,
-            'type': 'missing',
+            'type': 'outside',
             'notifications_sent': 1,
             'date_time': now,
         }
@@ -288,11 +290,12 @@ class TestObservationReturned(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
+            'threshold_type': 'missing',
             'threshold_value': None,
             'name': name,
             'label': label,
             'current_value': value,
-            'type': 'returned',
+            'type': 'within',
             'notifications_sent': notification_count,
             'date_time': now,
         }
@@ -400,6 +403,7 @@ class TestObservationEqualCheck(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
+            'threshold_type': 'equal',
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -507,6 +511,7 @@ class TestObservationEqualCheck(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
+            'threshold_type': 'equal',
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -584,6 +589,7 @@ class TestObservationMaxCheck(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
+            'threshold_type': 'max',
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -691,6 +697,7 @@ class TestObservationMaxCheck(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
+            'threshold_type': 'max',
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -769,6 +776,7 @@ class TestObservationMinCheck(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
+            'threshold_type': 'min',
             'threshold_value': value,
             'name': name,
             'label': label,
@@ -876,6 +884,7 @@ class TestObservationMinCheck(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
+            'threshold_type': 'min',
             'threshold_value': value,
             'name': name,
             'label': label,

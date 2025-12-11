@@ -203,6 +203,7 @@ class Notify(StdService):
         result = None
         now = int(time.time())
         result2 = {
+            'threshold_type': 'min',
             'threshold_value': observation_detail['value'],
             'name': name,
             'label': label,
@@ -268,6 +269,7 @@ class Notify(StdService):
         result = None
         now = int(time.time())
         result2 = {
+            'threshold_type': 'max',
             'threshold_value': observation_detail['value'],
             'name': name,
             'label': label,
@@ -322,7 +324,6 @@ class Notify(StdService):
                 # But does not short circuit checking the count threshold
                 observation_detail['last_sent_timestamp'] = 1
 
-
         if result:
             return namedtuple('Result', result.keys())(**result)
 
@@ -334,6 +335,7 @@ class Notify(StdService):
         result = None
         now = int(time.time())
         result2 = {
+            'threshold_type': 'equal',
             'threshold_value': observation_detail['value'],
             'name': name,
             'label': label,
@@ -392,7 +394,6 @@ class Notify(StdService):
                 # But does not short circuit checking the count threshold
                 observation_detail['last_sent_timestamp'] = 1
 
-
         if result:
             return namedtuple('Result', result.keys())(**result)
 
@@ -403,6 +404,7 @@ class Notify(StdService):
         log.debug("  Processing missing for %s%s", name, label)
         now = int(time.time())
         result2 = {
+            'threshold_type': 'missing',
             'threshold_value': None,
             'name': name,
             'label': label,
@@ -431,7 +433,7 @@ class Notify(StdService):
         if time_delta >= observation_detail['wait_time']:
             if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
                 self.missing_observations[observation]['notification_count'] += 1
-                result2['type'] = 'missing'
+                result2['type'] = 'outside'
                 result2['notifications_sent'] = self.missing_observations[observation]['notification_count']
                 result2['date_time'] = self.missing_observations[observation]['missing_time']
                 return namedtuple('Result', result2.keys())(**result2)
@@ -444,6 +446,7 @@ class Notify(StdService):
         result = None
         now = int(time.time())
         result2 = {
+            'threshold_type': 'missing',
             'threshold_value': None,
             'name': name,
             'label': label,
@@ -464,7 +467,7 @@ class Notify(StdService):
         if observation_detail['counter'] > 0:
             if self.missing_observations[observation]['notification_count'] > 0:
                 if observation_detail['return_notification']:
-                    result2['type'] = 'returned'
+                    result2['type'] = 'within'
                     result2['notifications_sent'] = self.missing_observations[observation]['notification_count']
                     result2['date_time'] = self.missing_observations[observation]['missing_time']
                     result = result2
@@ -514,7 +517,7 @@ class Notify(StdService):
                         # This is when a missing value has returned
                         # Therefore, do not reset sent timestamp
                         # self.executor.submit(self._send_notification, event.packet)
-                        self.notifier.send_notification('returned', result)
+                        self.notifier.send_notification(result)
 
                 detail_type = 'min'
                 if observation_detail.get('min', None):
@@ -524,7 +527,7 @@ class Notify(StdService):
                                                   data[observation])
                     if result:
                         # self.executor.submit(self._send_notification, event.packet)
-                        if self.notifier.send_notification('min', result):
+                        if self.notifier.send_notification(result):
                             observation_detail[detail_type]['last_sent_timestamp'] = now
 
                 detail_type = 'max'
@@ -535,7 +538,7 @@ class Notify(StdService):
                                                   data[observation])
                     if result:
                         # self.executor.submit(self._send_notification, event.packet)
-                        if self.notifier.send_notification('max', result):
+                        if self.notifier.send_notification(result):
                             observation_detail[detail_type]['last_sent_timestamp'] = now
 
                 detail_type = 'equal'
@@ -547,7 +550,7 @@ class Notify(StdService):
 
                     if result:
                         # self.executor.submit(self._send_notification, event.packet)
-                        if self.notifier.send_notification('equal', result):
+                        if self.notifier.send_notification(result):
                             observation_detail[detail_type]['last_sent_timestamp'] = now
 
             detail_type = 'missing'
@@ -558,7 +561,7 @@ class Notify(StdService):
                                                   observation_detail['missing'])
                 if result:
                     # self.executor.submit(self._send_notification, event.packet)
-                    if self.notifier.send_notification('missing', result):
+                    if self.notifier.send_notification(result):
                         observation_detail[detail_type]['last_sent_timestamp'] = now
 
     def new_archive_record(self, event):
