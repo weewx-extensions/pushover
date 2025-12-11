@@ -45,6 +45,10 @@ class PushOver(user.notify.AbstractNotifier):
         log.info(title)
         log.info(msg)
 
+    def build_title(self, msg_data):
+        """ Build a title based on threshold status."""
+        return f"Unexpected value for {msg_data.name}."
+
     def build_message(self, msg_data):
         """ Build a message based on threshold status."""
         msg_template = {
@@ -114,7 +118,7 @@ class PushOver(user.notify.AbstractNotifier):
     async def send_notification(self, msg_data):
         log.debug("Message data is '%s'", msg_data)
         log.debug("Server is: '%s' for %s", self.server, msg_data.name)
-        title = f"Unexpected value for {msg_data.name}."
+        title = self.build_title(msg_data)
         msg = self.build_message(msg_data)
 
         if self.log:
