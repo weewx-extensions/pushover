@@ -15,6 +15,10 @@ Configuration:
     # Default is True.
     enable = True
 
+    # The number of seconds to wait for the notification to be sent and processed.
+    # Default is None
+    notification_timeout = None
+
 [[notifier]]
         # Controls if notifications are sent.
         # Valid values: True or False
@@ -139,13 +143,15 @@ class Notify(StdService):
 
         self.logger = Logger()
 
-        self.notifier_class_name = 'user.pushover.PushOver'
         service_dict = config_dict.get('Notify', {})
 
         enable = to_bool(service_dict.get('enable', True))
         if not enable:
             self.logger.loginf("Notify is not enabled, exiting")
             return
+
+        self.notification_timeout = to_int(service_dict.get('notification_timeout', None))
+        self.notifier_class_name = 'user.pushover.PushOver'
 
         notifier_dict = service_dict.get('notifier', {})
 
@@ -511,7 +517,6 @@ class Notify(StdService):
                                                   observation_detail[detail_type],
                                                   data[observation])
                     if result:
-                        # self.executor.submit(self._send_notification, event.packet)
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
@@ -523,7 +528,6 @@ class Notify(StdService):
                                                   observation_detail[detail_type],
                                                   data[observation])
                     if result:
-                        # self.executor.submit(self._send_notification, event.packet)
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
@@ -536,7 +540,6 @@ class Notify(StdService):
                                                     data[observation])
 
                     if result:
-                        # self.executor.submit(self._send_notification, event.packet)
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
@@ -548,13 +551,12 @@ class Notify(StdService):
                                                   observation_detail['label'],
                                                   observation_detail['missing'])
                 if result:
-                    # self.executor.submit(self._send_notification, event.packet)
                     task_name = f"{observation}-{detail_type}-{now}"
                     task_names[task_name] = observation_detail[detail_type]
                     tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
         if tasks:
-            done, _pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            done, _pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=self.notification_timeout)
             for task in done:
                 result = task.result()
                 task_name = task.get_name()
