@@ -508,6 +508,7 @@ class Notify(StdService):
                         # Therefore, do not reset sent timestamp
                         # self.executor.submit(self._send_notification, event.packet)
                         task_name = f"{observation}-{detail_type}-{now}"
+                        self.logger.logdbg(f"Task, {task_name}, with {result}, has been submitted and not recorded.")
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'min'
@@ -519,6 +520,7 @@ class Notify(StdService):
                     if result:
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
+                        self.logger.logdbg(f"Task, {task_name}, with {result}, has been submitted and recorded.")
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'max'
@@ -530,6 +532,7 @@ class Notify(StdService):
                     if result:
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
+                        self.logger.logdbg(f"Task, {task_name}, with {result}, has been submitted and recorded.")
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'equal'
@@ -542,6 +545,7 @@ class Notify(StdService):
                     if result:
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
+                        self.logger.logdbg(f"Task, {task_name}, with {result}, has been submitted and recorded.")
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
             detail_type = 'missing'
@@ -553,15 +557,22 @@ class Notify(StdService):
                 if result:
                     task_name = f"{observation}-{detail_type}-{now}"
                     task_names[task_name] = observation_detail[detail_type]
+                    self.logger.logdbg(f"Task, {task_name}, with {result}, has been submitted and recorded.")
                     tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
         if tasks:
-            done, _pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=self.notification_timeout)
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=self.notification_timeout)
             for task in done:
                 result = task.result()
                 task_name = task.get_name()
+                self.logger.logdbg(f"Task, {task_name}, completed with result, {result}.")
                 if task_name in task_names and result:
                     task_names[task_name]['last_sent_timestamp'] = now
+
+            for task in pending:
+                task_name = task.get_name()
+                cancelled = task.cancel()
+                self.logger.logerr(f"Task, {task_name}, cancellation attempt with result {cancelled}.")
 
         await self.notifier.finalize()
 
