@@ -180,7 +180,7 @@ class Notify(StdService):
         self.missing_observations = {}
 
         notifier_class = weeutil.weeutil.get_object(self.notifier_class_name)
-        self.notifier = notifier_class(notifier_dict)
+        self.notifier = notifier_class(self.logger, notifier_dict)
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
@@ -579,8 +579,9 @@ class Notify(StdService):
 
 class AbstractNotifier():
     ''' Abstract class for sending notifications.'''
-    def __init__(self):
+    def __init__(self, logger, _config_dict):
         self.name = self.__class__.__name__
+        self.logger = logger
 
     async def initialize(self):
         ''' Perform any final processing for this 'round'. '''
