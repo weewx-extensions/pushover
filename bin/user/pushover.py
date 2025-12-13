@@ -39,28 +39,29 @@ class PushOver(user.notify.AbstractNotifier):
         self.server_error_timestamp = 0
 
     def _logit(self, title, msg):
-        self.logger.loginf(title)
-        self.logger.loginf(msg)
+        self.logger.loginf(self.name, title)
+        self.logger.loginf(self.name, msg)
 
     def throttle_notification(self):
         now = int(time.time())
         if self.client_error_timestamp:
             if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
-                self.logger.logerr(f"Fatal error occurred at {format_timestamp(self.client_error_timestamp)}, Notify skipped.")
+                self.logger.logerr(self.name, (f"Fatal error occurred at {format_timestamp(self.client_error_timestamp)}, "
+                                               f"Notify skipped."))
                 self.client_error_last_logged = now
                 return True
 
         if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
-            self.logger.logdbg((f"Server error received at {format_timestamp(self.server_error_timestamp)}, "
-                                f"waiting {self.server_error_wait_period} seconds before retrying."))
+            self.logger.logdbg(self.name, (f"Server error received at {format_timestamp(self.server_error_timestamp)}, "
+                                           f"waiting {self.server_error_wait_period} seconds before retrying."))
             return True
 
         self.server_error_timestamp = 0
         return False
 
     async def send_notification(self, msg_data):
-        self.logger.logdbg(f"Message data is '{msg_data}'")
-        self.logger.logdbg(f"Server is: '{self.server}' for {msg_data.name}")
+        self.logger.logdbg(self.name, f"Message data is '{msg_data}'")
+        self.logger.logdbg(self.name, f"Server is: '{self.server}' for {msg_data.name}")
         title = self.build_title(msg_data)
         msg = self.build_message(msg_data)
 
@@ -86,12 +87,12 @@ class PushOver(user.notify.AbstractNotifier):
     def _check_response(self, response, msg_data):
         ''' Check the response. '''
         now = time.time()
-        self.logger.logdbg(f"Response code is: '{response.code}' for {msg_data.name}")
+        self.logger.logdbg(self.name, f"Response code is: '{response.code}' for {msg_data.name}")
 
         if response.code == 200:
             return True
 
-        self.logger.logerr(f"Received code '{response.code}' for {msg_data.name}")
+        self.logger.logerr(self.name, f"Received code '{response.code}' for {msg_data.name}")
         if response.code >= 400 and response.code < 500:
             self.client_error_timestamp = now
             self.client_error_last_logged = now
@@ -101,9 +102,9 @@ class PushOver(user.notify.AbstractNotifier):
         try:
             response_dict = json.loads(response_body)
             errors = '\n'.join(response_dict['errors'])
-            self.logger.logerr(f"{errors} for {msg_data.name}")
+            self.logger.logerr(self.name, f"{errors} for {msg_data.name}")
         except json.JSONDecodeError as exception:
-            self.logger.logerr(f"Unable to parse '{exception.doc}' for {msg_data.name}.")
-            self.logger.logerr((f"Error at '{exception.pos}', line: '{exception.lineno}' "
-                                f"column: '{exception.colno}' for {msg_data.name}"))
+            self.logger.logerr(self.name, f"Unable to parse '{exception.doc}' for {msg_data.name}.")
+            self.logger.logerr(self.name, (f"Error at '{exception.pos}', line: '{exception.lineno}' "
+                                           f"column: '{exception.colno}' for {msg_data.name}"))
         return False
