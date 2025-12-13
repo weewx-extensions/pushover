@@ -34,6 +34,9 @@ def setup_config_dict(binding,
     config_dict = {
         'Notify':
         {
+            'PushOver': {
+                'extension': random_string(),
+            },
             binding:
             {
                 observation:
@@ -58,6 +61,10 @@ def setup_config_dict(binding,
 
     return config_dict
 
+class MockClass():
+    def __init__(self, _arg1, _arg2):
+        pass
+
 class TestObservationMissing(unittest.TestCase):
     def test_at_startup(self):
         mock_engine = mock.Mock()
@@ -81,19 +88,20 @@ class TestObservationMissing(unittest.TestCase):
         }
 
         with mock.patch('user.notify.Logger', spec=Logger):
-            SUT = Notify(mock_engine, config)
+            with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                mock_weeutil.get_object.return_value = MockClass
+                SUT = Notify(mock_engine, config)
+                result = SUT.check_missing_value(observation,
+                                                 SUT.archive_observations[observation]['name'],
+                                                 SUT.archive_observations[observation]['label'],
+                                                 SUT.archive_observations[observation]['missing'])
 
-            result = SUT.check_missing_value(observation,
-                                             SUT.archive_observations[observation]['name'],
-                                             SUT.archive_observations[observation]['label'],
-                                             SUT.archive_observations[observation]['missing'])
+                expected_dict['date_time'] = SUT.missing_observations[observation]['missing_time']
+                expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-            expected_dict['date_time'] = SUT.missing_observations[observation]['missing_time']
-            expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
-
-        self.assertEqual(result, expected_result)
-        self.assertIn(observation, SUT.missing_observations)
-        self.assertIn('missing_time', SUT.missing_observations[observation])
+            self.assertEqual(result, expected_result)
+            self.assertIn(observation, SUT.missing_observations)
+            self.assertIn('missing_time', SUT.missing_observations[observation])
 
     def test_past_time_threshold_past_count_threshold(self):
         mock_engine = mock.Mock()
@@ -120,26 +128,27 @@ class TestObservationMissing(unittest.TestCase):
         expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
         with mock.patch('user.notify.Logger', spec=Logger):
-            SUT = Notify(mock_engine, config)
+            with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                mock_weeutil.get_object.return_value = MockClass
+                SUT = Notify(mock_engine, config)
+                # Missing notification has been 'sent'.
+                # Setting to 1, ensures that time threshold has been met.
+                SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
+                SUT.missing_observations[observation] = {}
+                SUT.missing_observations[observation]['missing_time'] = now
+                SUT.missing_observations[observation]['notification_count'] = 0
 
-            # Missing notification has been 'sent'.
-            # Setting to 1, ensures that time threshold has been met.
-            SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
-            SUT.missing_observations[observation] = {}
-            SUT.missing_observations[observation]['missing_time'] = now
-            SUT.missing_observations[observation]['notification_count'] = 0
+                # Setting to ensure that count threshold has been met.
+                SUT.archive_observations[observation]['missing']['counter'] = count - 1
 
-            # Setting to ensure that count threshold has been met.
-            SUT.archive_observations[observation]['missing']['counter'] = count - 1
+                result = SUT.check_missing_value(observation,
+                                                 SUT.archive_observations[observation]['name'],
+                                                 SUT.archive_observations[observation]['label'],
+                                                 SUT.archive_observations[observation]['missing'])
 
-            result = SUT.check_missing_value(observation,
-                                             SUT.archive_observations[observation]['name'],
-                                             SUT.archive_observations[observation]['label'],
-                                             SUT.archive_observations[observation]['missing'])
-
-            self.assertEqual(result, expected_result)
-            self.assertIn(observation, SUT.missing_observations)
-            self.assertIn('missing_time', SUT.missing_observations[observation])
+                self.assertEqual(result, expected_result)
+                self.assertIn(observation, SUT.missing_observations)
+                self.assertIn('missing_time', SUT.missing_observations[observation])
 
     def test_past_time_threshold(self):
         mock_engine = mock.Mock()
@@ -151,21 +160,22 @@ class TestObservationMissing(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         with mock.patch('user.notify.Logger', spec=Logger):
-            SUT = Notify(mock_engine, config)
+            with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                mock_weeutil.get_object.return_value = MockClass
+                SUT = Notify(mock_engine, config)
+                # Missing notification has been 'sent'.
+                # Setting to 1, ensures that time threshold has been met.
+                SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
+                # Setting to ensure that count threshold has NOT been met.
+                SUT.archive_observations[observation]['missing']['counter'] = 0
 
-            # Missing notification has been 'sent'.
-            # Setting to 1, ensures that time threshold has been met.
-            SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
-            # Setting to ensure that count threshold has NOT been met.
-            SUT.archive_observations[observation]['missing']['counter'] = 0
+                result = SUT.check_missing_value(observation,
+                                                 SUT.archive_observations[observation]['name'],
+                                                 SUT.archive_observations[observation]['label'],
+                                                 SUT.archive_observations[observation]['missing'])
 
-            result = SUT.check_missing_value(observation,
-                                             SUT.archive_observations[observation]['name'],
-                                             SUT.archive_observations[observation]['label'],
-                                             SUT.archive_observations[observation]['missing'])
-
-            self.assertIsNone(result)
-            self.assertIn(observation, SUT.missing_observations)
+                self.assertIsNone(result)
+                self.assertIn(observation, SUT.missing_observations)
 
     def test_past_count_threshold(self):
         mock_engine = mock.Mock()
@@ -177,21 +187,22 @@ class TestObservationMissing(unittest.TestCase):
         config = configobj.ConfigObj(config_dict)
 
         with mock.patch('user.notify.Logger', spec=Logger):
-            SUT = Notify(mock_engine, config)
+            with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                mock_weeutil.get_object.return_value = MockClass
+                SUT = Notify(mock_engine, config)
+                # Missing notification has been 'sent'.
+                # Setting to 1, ensures that time threshold has NOT been met.
+                SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = \
+                    int(time.time())
+                # Setting to ensure that count threshold has been met.
+                SUT.archive_observations[observation]['missing']['counter'] = count - 1
 
-            # Missing notification has been 'sent'.
-            # Setting to 1, ensures that time threshold has NOT been met.
-            SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = \
-                int(time.time())
-            # Setting to ensure that count threshold has been met.
-            SUT.archive_observations[observation]['missing']['counter'] = count - 1
+                result = SUT.check_missing_value(observation,
+                                                 SUT.archive_observations[observation]['name'],
+                                                 SUT.archive_observations[observation]['label'],
+                                                 SUT.archive_observations[observation]['missing'])
 
-            result = SUT.check_missing_value(observation,
-                                             SUT.archive_observations[observation]['name'],
-                                             SUT.archive_observations[observation]['label'],
-                                             SUT.archive_observations[observation]['missing'])
-
-            self.assertIsNone(result)
+                self.assertIsNone(result)
 
 class TestObservationReturned(unittest.TestCase):
     def test_observation_not_missing(self):
@@ -206,17 +217,19 @@ class TestObservationReturned(unittest.TestCase):
         config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
 
-        SUT.missing_observations = {}
+            SUT.missing_observations = {}
 
-        result = SUT.check_value_returned(observation,
-                                          name,
-                                          label,
-                                          SUT.archive_observations[observation]['missing'],
-                                          value)
+            result = SUT.check_value_returned(observation,
+                                              name,
+                                              label,
+                                              SUT.archive_observations[observation]['missing'],
+                                              value)
 
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_missing_no_notification(self):
         mock_engine = mock.Mock()
@@ -231,22 +244,23 @@ class TestObservationReturned(unittest.TestCase):
         config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
-
-        SUT.missing_observations = {
-            observation: {
-                'notification_count': 0,
-                'missing_time': now,
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.missing_observations = {
+                observation: {
+                    'notification_count': 0,
+                    'missing_time': now,
+                }
             }
-        }
 
-        result = SUT.check_value_returned(observation,
-                                          name,
-                                          label,
-                                          SUT.archive_observations[observation]['missing'],
-                                          value)
+            result = SUT.check_value_returned(observation,
+                                              name,
+                                              label,
+                                              SUT.archive_observations[observation]['missing'],
+                                              value)
 
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_missing_with_notification(self):
         mock_engine = mock.Mock()
@@ -274,24 +288,25 @@ class TestObservationReturned(unittest.TestCase):
         }
         expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-        SUT = Notify(mock_engine, config)
-
-        SUT.missing_observations = {
-            observation: {
-                'notification_count': notification_count,
-                'missing_time': now,
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.missing_observations = {
+                observation: {
+                    'notification_count': notification_count,
+                    'missing_time': now,
+                }
             }
-        }
 
-        SUT.archive_observations[observation]['missing']['counter'] = 1
+            SUT.archive_observations[observation]['missing']['counter'] = 1
 
-        result = SUT.check_value_returned(observation,
-                                          name,
-                                          label,
-                                          SUT.archive_observations[observation]['missing'],
-                                          value)
+            result = SUT.check_value_returned(observation,
+                                              name,
+                                              label,
+                                              SUT.archive_observations[observation]['missing'],
+                                              value)
 
-        self.assertEqual(result, expected_result)
+            self.assertEqual(result, expected_result)
 
     def test_observation_missing_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -307,22 +322,23 @@ class TestObservationReturned(unittest.TestCase):
         config_dict = setup_config_dict(binding, observation, 'missing', label=label, name=name, return_notification=False)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
-
-        SUT.missing_observations = {
-            observation: {
-                'notification_count': notification_count,
-                'missing_time': now,
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.missing_observations = {
+                observation: {
+                    'notification_count': notification_count,
+                    'missing_time': now,
+                }
             }
-        }
 
-        result = SUT.check_value_returned(observation,
-                                          name,
-                                          label,
-                                          SUT.archive_observations[observation]['missing'],
-                                          value)
+            result = SUT.check_value_returned(observation,
+                                              name,
+                                              label,
+                                              SUT.archive_observations[observation]['missing'],
+                                              value)
 
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
 class TestObservationEqualCheck(unittest.TestCase):
     def test_observation_equal_no_notification(self):
@@ -342,19 +358,20 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
+                time.time()
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
-            time.time()
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
+            result = SUT.check_equal_value(name,
+                                           label,
+                                           SUT.archive_observations[observation]['equal'],
+                                           value)
 
-        result = SUT.check_equal_value(name,
-                                       label,
-                                       SUT.archive_observations[observation]['equal'],
-                                       value)
-
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_equal_with_notification(self):
         mock_engine = mock.Mock()
@@ -387,20 +404,21 @@ class TestObservationEqualCheck(unittest.TestCase):
         }
         expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
+                notification_count
+            SUT.archive_observations[observation]['equal']['counter'] = 1
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
-            notification_count
-        SUT.archive_observations[observation]['equal']['counter'] = 1
+            result = SUT.check_equal_value(name,
+                                           label,
+                                           SUT.archive_observations[observation]['equal'],
+                                           value)
 
-        result = SUT.check_equal_value(name,
-                                       label,
-                                       SUT.archive_observations[observation]['equal'],
-                                       value)
-
-        self.assertEqual(result, expected_result)
+            self.assertEqual(result, expected_result)
 
     def test_observation_equal_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -422,19 +440,20 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         return_notification=False)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
+                notification_count
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
-            notification_count
+            result = SUT.check_equal_value(name,
+                                           label,
+                                           SUT.archive_observations[observation]['equal'],
+                                           value)
 
-        result = SUT.check_equal_value(name,
-                                       label,
-                                       SUT.archive_observations[observation]['equal'],
-                                       value)
-
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_not_equal_no_notification(self):
         mock_engine = mock.Mock()
@@ -454,14 +473,15 @@ class TestObservationEqualCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            result = SUT.check_equal_value(name,
+                                           label,
+                                           SUT.archive_observations[observation]['equal'],
+                                           record_value)
 
-        result = SUT.check_equal_value(name,
-                                       label,
-                                       SUT.archive_observations[observation]['equal'],
-                                       record_value)
-
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_not_equal_with_notification(self):
         mock_engine = mock.Mock()
@@ -495,20 +515,21 @@ class TestObservationEqualCheck(unittest.TestCase):
         }
         expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['counter'] = \
+                SUT.archive_observations[observation]['equal']['count'] + 1
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
-        SUT.archive_observations[observation]['equal']['counter'] = \
-            SUT.archive_observations[observation]['equal']['count'] + 1
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
+            result = SUT.check_equal_value(name,
+                                           label,
+                                           SUT.archive_observations[observation]['equal'],
+                                           record_value)
 
-        result = SUT.check_equal_value(name,
-                                       label,
-                                       SUT.archive_observations[observation]['equal'],
-                                       record_value)
-
-        self.assertEqual(result, expected_result)
+            self.assertEqual(result, expected_result)
 
 class TestObservationMaxCheck(unittest.TestCase):
     def test_observation_not_greater_no_notification(self):
@@ -528,19 +549,20 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
+                time.time()
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
-            time.time()
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
+            result = SUT.check_max_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         value)
 
-        result = SUT.check_max_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     value)
-
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_not_greater_with_notification(self):
         mock_engine = mock.Mock()
@@ -573,20 +595,21 @@ class TestObservationMaxCheck(unittest.TestCase):
         }
         expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
+                notification_count
+            SUT.archive_observations[observation]['equal']['counter'] = 1
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
-            notification_count
-        SUT.archive_observations[observation]['equal']['counter'] = 1
+            result = SUT.check_max_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         value)
 
-        result = SUT.check_max_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     value)
-
-        self.assertEqual(result, expected_result)
+            self.assertEqual(result, expected_result)
 
     def test_observation_not_greater_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -608,19 +631,20 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         return_notification=False)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
+                notification_count
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
-            notification_count
+            result = SUT.check_max_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         value)
 
-        result = SUT.check_max_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     value)
-
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_greater_no_notification(self):
         mock_engine = mock.Mock()
@@ -640,14 +664,15 @@ class TestObservationMaxCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            result = SUT.check_max_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         record_value)
 
-        result = SUT.check_max_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     record_value)
-
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_greater_with_notification(self):
         mock_engine = mock.Mock()
@@ -681,21 +706,22 @@ class TestObservationMaxCheck(unittest.TestCase):
         }
         expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['counter'] = \
+                SUT.archive_observations[observation]['equal']['count'] + 1
 
-        SUT.archive_observations[observation]['equal']['counter'] = \
-            SUT.archive_observations[observation]['equal']['count'] + 1
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
+            result = SUT.check_max_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         record_value)
 
-        result = SUT.check_max_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     record_value)
-
-        self.assertEqual(result, expected_result)
+            self.assertEqual(result, expected_result)
 
 class TestObservationMinCheck(unittest.TestCase):
     def test_observation_not_greater_no_notification(self):
@@ -715,19 +741,20 @@ class TestObservationMinCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
+                time.time()
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = \
-            time.time()
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
+            result = SUT.check_min_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         value)
 
-        result = SUT.check_min_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     value)
-
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_not_greater_with_notification(self):
         mock_engine = mock.Mock()
@@ -760,20 +787,21 @@ class TestObservationMinCheck(unittest.TestCase):
         }
         expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
+                notification_count
+            SUT.archive_observations[observation]['equal']['counter'] = 1
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
-            notification_count
-        SUT.archive_observations[observation]['equal']['counter'] = 1
+            result = SUT.check_min_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         value)
 
-        result = SUT.check_min_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     value)
-
-        self.assertEqual(result, expected_result)
+            self.assertEqual(result, expected_result)
 
     def test_observation_not_greater_notification_not_requested(self):
         mock_engine = mock.Mock()
@@ -795,19 +823,20 @@ class TestObservationMinCheck(unittest.TestCase):
                                         return_notification=False)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
+                notification_count
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
-            notification_count
+            result = SUT.check_min_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         value)
 
-        result = SUT.check_min_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     value)
-
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_less_no_notification(self):
         mock_engine = mock.Mock()
@@ -827,14 +856,15 @@ class TestObservationMinCheck(unittest.TestCase):
                                         value=value)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            result = SUT.check_min_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         record_value)
 
-        result = SUT.check_min_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     record_value)
-
-        self.assertIsNone(result)
+            self.assertIsNone(result)
 
     def test_observation_less_with_notification(self):
         mock_engine = mock.Mock()
@@ -868,21 +898,22 @@ class TestObservationMinCheck(unittest.TestCase):
         }
         expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-        SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+            mock_weeutil.get_object.return_value = MockClass
+            SUT = Notify(mock_engine, config)
+            SUT.archive_observations[observation]['equal']['counter'] = \
+                SUT.archive_observations[observation]['equal']['count'] + 1
 
-        SUT.archive_observations[observation]['equal']['counter'] = \
-            SUT.archive_observations[observation]['equal']['count'] + 1
+            SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
+            SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
-        SUT.archive_observations[observation]['equal']['threshold_passed'] = {}
-        SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
-        SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
+            result = SUT.check_min_value(name,
+                                         label,
+                                         SUT.archive_observations[observation]['equal'],
+                                         record_value)
 
-        result = SUT.check_min_value(name,
-                                     label,
-                                     SUT.archive_observations[observation]['equal'],
-                                     record_value)
-
-        self.assertEqual(result, expected_result)
+            self.assertEqual(result, expected_result)
 
 if __name__ == '__main__':
     # test_suite = unittest.TestSuite()
