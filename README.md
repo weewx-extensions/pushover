@@ -13,7 +13,20 @@ After [installing](https://weewx.com/docs/5.0/utilities/weectl-extension/#instal
     # Default is True.
     enable = True
 
-[[notifier]]
+    # The number of seconds to wait for the notification to be sent and processed.
+    # Default is None
+    notification_timeout = None
+
+    # The name of the notification provider.
+    # There must be a matching section within '[Notify]'.
+    # The default is PushOver.
+    notifier = Pushover
+
+    # Configuration data for the notification provider.
+    [[Pushover]]
+        # The extension (service) to use.
+        extension = user.pushover.Pushover
+
         # Controls if notifications are sent.
         # Valid values: True or False
         # Default is True.

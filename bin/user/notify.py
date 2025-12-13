@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2023 - 2025 Rich Bell <bellrichm@gmail.com>
+#    Copyright (c) 2025 Rich Bell <bellrichm@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -19,7 +19,16 @@ Configuration:
     # Default is None
     notification_timeout = None
 
-[[notifier]]
+    # The name of the notification provider.
+    # There must be a matching section within '[Notify]'.
+    # The default is PushOver.
+    notifier = Pushover
+
+    # Configuration data for the notification provider.
+    [[Pushover]]
+        # The extension (service) to use.
+        extension = user.pushover.Pushover
+
         # Controls if notifications are sent.
         # Valid values: True or False
         # Default is True.
@@ -105,7 +114,6 @@ import logging
 import os
 import time
 from collections import namedtuple
-from concurrent.futures import ThreadPoolExecutor
 
 import configobj
 
@@ -152,9 +160,16 @@ class Notify(StdService):
             return
 
         self.notification_timeout = to_int(service_dict.get('notification_timeout', None))
-        self.notifier_class_name = 'user.pushover.PushOver'
 
-        notifier_dict = service_dict.get('notifier', {})
+        notifier_name = service_dict.get('notifier', 'PushOver')
+        notifier_dict = service_dict.get(notifier_name, None)
+        if not notifier_dict:
+            raise ValueError("'notifier' is required.")
+        notifier_class_name = notifier_dict.get('extension', None)
+        if not notifier_class_name:
+            raise ValueError("'extension' is required.")
+        notifier_class = weeutil.weeutil.get_object(notifier_class_name)
+        self.notifier = notifier_class(self.logger, notifier_dict)
 
         count = to_int(service_dict.get('count', 10))
         wait_time = to_int(service_dict.get('wait_time', 3600))
@@ -185,11 +200,6 @@ class Notify(StdService):
         self.logger.loginf(self.name, f"archive observations: {self.archive_observations}")
 
         self.missing_observations = {}
-
-        notifier_class = weeutil.weeutil.get_object(self.notifier_class_name)
-        self.notifier = notifier_class(self.logger, notifier_dict)
-
-        self.executor = ThreadPoolExecutor(max_workers=5)
 
         if self.archive_observations:
             self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
@@ -507,7 +517,6 @@ class Notify(StdService):
                     if result:
                         # This is when a missing value has returned
                         # Therefore, do not reset sent timestamp
-                        # self.executor.submit(self._send_notification, event.packet)
                         task_name = f"{observation}-{detail_type}-{now}"
                         self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and not recorded.")
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
@@ -586,10 +595,6 @@ class Notify(StdService):
         """ Handle the new loop packet event. """
         if not self.notifier.throttle_notification():
             asyncio.run(self._process_data(event.packet, self.loop_observations))
-
-    def shutDown(self):
-        """Run when an engine shutdown is requested."""
-        self.executor.shutdown(wait=False)
 
 class AbstractNotifier():
     ''' Abstract class for sending notifications.'''
