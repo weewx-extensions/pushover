@@ -17,18 +17,7 @@ import time
 
 from collections import namedtuple
 
-from user.notify import Notify
-
-VERBOSE = False
-def mock_logger_debug(msg, *args):
-    if VERBOSE:
-        print("DEBUG: " + msg % args)
-def mock_logger_info(msg, *args):
-    if VERBOSE:
-        print("INFO:  " + msg % args)
-def mock_logger_error(msg, *args):
-    if VERBOSE:
-        print("ERROR: " + msg % args)
+from user.notify import Notify, Logger
 
 def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)])
@@ -91,12 +80,8 @@ class TestObservationMissing(unittest.TestCase):
             'date_time': None,
         }
 
-        SUT = Notify(mock_engine, config)
-
-        with mock.patch('user.notify.log') as mock_logger:
-            mock_logger.debug = mock_logger_debug
-            mock_logger.info = mock_logger_info
-            mock_logger.error = mock_logger_error
+        with mock.patch('user.notify.Logger', spec=Logger):
+            SUT = Notify(mock_engine, config)
 
             result = SUT.check_missing_value(observation,
                                              SUT.archive_observations[observation]['name'],
@@ -134,12 +119,8 @@ class TestObservationMissing(unittest.TestCase):
         }
         expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
-        SUT = Notify(mock_engine, config)
-
-        with mock.patch('user.notify.log') as mock_logger:
-            mock_logger.debug = mock_logger_debug
-            mock_logger.info = mock_logger_info
-            mock_logger.error = mock_logger_error
+        with mock.patch('user.notify.Logger', spec=Logger):
+            SUT = Notify(mock_engine, config)
 
             # Missing notification has been 'sent'.
             # Setting to 1, ensures that time threshold has been met.
@@ -169,12 +150,8 @@ class TestObservationMissing(unittest.TestCase):
         config_dict = setup_config_dict('archive', observation, 'missing', label, count=count)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
-
-        with mock.patch('user.notify.log') as mock_logger:
-            mock_logger.debug = mock_logger_debug
-            mock_logger.info = mock_logger_info
-            mock_logger.error = mock_logger_error
+        with mock.patch('user.notify.Logger', spec=Logger):
+            SUT = Notify(mock_engine, config)
 
             # Missing notification has been 'sent'.
             # Setting to 1, ensures that time threshold has been met.
@@ -199,12 +176,8 @@ class TestObservationMissing(unittest.TestCase):
         config_dict = setup_config_dict('archive', observation, 'missing', label, count=count)
         config = configobj.ConfigObj(config_dict)
 
-        SUT = Notify(mock_engine, config)
-
-        with mock.patch('user.notify.log') as mock_logger:
-            mock_logger.debug = mock_logger_debug
-            mock_logger.info = mock_logger_info
-            mock_logger.error = mock_logger_error
+        with mock.patch('user.notify.Logger', spec=Logger):
+            SUT = Notify(mock_engine, config)
 
             # Missing notification has been 'sent'.
             # Setting to 1, ensures that time threshold has NOT been met.

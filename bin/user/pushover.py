@@ -9,14 +9,11 @@ Send a notification via pushover, pushover.net
 
 import http.client
 import json
-import logging
 import time
 import urllib
 
 from weeutil.weeutil import to_bool, to_int
 import user.notify
-
-log = logging.getLogger(__name__)
 
 def format_timestamp(ts, format_str="%Y-%m-%d %H:%M:%S %Z"):
     ''' Format a timestamp for human consumption. '''
@@ -24,8 +21,8 @@ def format_timestamp(ts, format_str="%Y-%m-%d %H:%M:%S %Z"):
 
 class PushOver(user.notify.AbstractNotifier):
     """ Class to perform the pushover call."""
-    def __init__(self, notifier_dict):
-        super().__init__()
+    def __init__(self, logger, notifier_dict):
+        super().__init__(logger, notifier_dict)
         self.send = to_bool(notifier_dict.get('send', True))
         self.log = to_bool(notifier_dict.get('log', True))
 
@@ -42,81 +39,30 @@ class PushOver(user.notify.AbstractNotifier):
         self.server_error_timestamp = 0
 
     def _logit(self, title, msg):
-        log.info(title)
-        log.info(msg)
-
-    def build_message(self, msg_data):
-        """ Build a message based on threshold status."""
-        msg_template = {
-            'equal': {
-                'outside': ("At {date_time} {name}{label} is no longer equal to threshold of {threshold_value}. "
-                            "Current value is {current_value}. {notifications_sent} sent.\n"),
-                'within': ("{name}{label} Not Equal at {date_time} is within threshold with value {current_value}, "
-                           "{notifications_sent} notifications sent.\n"),
-            },
-            'max': {
-                'outside': ("At {date_time} {name}{label} went above threshold of {threshold_value}. "
-                            "Current value is {current_value}. {notifications_sent} sent.\n"),
-                'within': ("{name}{label} over Max threshold at {date_time} is within threshold with value {current_value}, "
-                           "{notifications_sent} notifications sent.\n"),
-            },
-            'min': {
-                'outside': ("At {date_time} {name}{label} went below threshold of {threshold_value}. "
-                            "Current value is {current_value}. {notifications_sent} sent.\n"),
-                'within': ("{name}{label} over Min threshold at {date_time} is within threshold with value {current_value}, "
-                           "{notifications_sent} notifications sent.\n"),
-            },
-        }
-
-        msg_missing_template = "{name}{label} missing at {date_time}, {notifications_sent} notifications sent.\n"
-
-        msg_returned_template = ("{name}{label} missing at {date_time} returned with value {current_value}, "
-                                 "{notifications_sent} notification sent.\n")
-
-        if msg_data.threshold_type == 'missing' and msg_data.type == 'outside':
-            return msg_missing_template.format(name=msg_data.name,
-                                               label=msg_data.label,
-                                               date_time=format_timestamp(msg_data.date_time),
-                                               notifications_sent=msg_data.notifications_sent)
-
-        if msg_data.threshold_type == 'missing' and msg_data.type == 'within':
-            return msg_returned_template.format(name=msg_data.name,
-                                                label=msg_data.label,
-                                                date_time=format_timestamp(msg_data.date_time),
-                                                current_value=msg_data.current_value,
-                                                notifications_sent=msg_data.notifications_sent)
-
-        return msg_template[msg_data.threshold_type][msg_data.type].format(date_time=format_timestamp(msg_data.date_time),
-                                                                           name=msg_data.name,
-                                                                           label=msg_data.label,
-                                                                           threshold_value=msg_data.threshold_value,
-                                                                           current_value=msg_data.current_value,
-                                                                           notifications_sent=msg_data.notifications_sent
-                                                                           )
+        self.logger.loginf(self.name, title)
+        self.logger.loginf(self.name, msg)
 
     def throttle_notification(self):
-        ''' Check if the call should be performed or throttled.'''
         now = int(time.time())
         if self.client_error_timestamp:
             if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
-                log.error("Fatal error occurred at %s, Notify skipped.", format_timestamp(self.client_error_timestamp))
+                self.logger.logerr(self.name, (f"Fatal error occurred at {format_timestamp(self.client_error_timestamp)}, "
+                                               f"Notify skipped."))
                 self.client_error_last_logged = now
                 return True
 
         if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
-            log.debug("Server error received at %s, waiting %s seconds before retrying.",
-                      format_timestamp(self.server_error_timestamp),
-                      self.server_error_wait_period)
+            self.logger.logdbg(self.name, (f"Server error received at {format_timestamp(self.server_error_timestamp)}, "
+                                           f"waiting {self.server_error_wait_period} seconds before retrying."))
             return True
 
         self.server_error_timestamp = 0
         return False
 
-    def send_notification(self, msg_data):
-        ''' Perform the call.'''
-        log.debug("Message data is '%s'", msg_data)
-        log.debug("Server is: '%s' for %s", self.server, msg_data.name)
-        title = f"Unexpected value for {msg_data.name}."
+    async def send_notification(self, msg_data):
+        self.logger.logdbg(self.name, f"Message data is '{msg_data}'")
+        self.logger.logdbg(self.name, f"Server is: '{self.server}' for {msg_data.name}")
+        title = self.build_title(msg_data)
         msg = self.build_message(msg_data)
 
         if self.log:
@@ -136,17 +82,17 @@ class PushOver(user.notify.AbstractNotifier):
                            {"Content-type": "application/x-www-form-urlencoded"})
         response = connection.getresponse()
 
-        return self.check_response(response, msg_data.name)
+        return self._check_response(response, msg_data)
 
-    def check_response(self, response, obs):
+    def _check_response(self, response, msg_data):
         ''' Check the response. '''
         now = time.time()
-        log.debug("Response code is: '%s' for %s", response.code, obs)
+        self.logger.logdbg(self.name, f"Response code is: '{response.code}' for {msg_data.name}")
 
         if response.code == 200:
             return True
 
-        log.error("Received code '%s' for %s", response.code, obs)
+        self.logger.logerr(self.name, f"Received code '{response.code}' for {msg_data.name}")
         if response.code >= 400 and response.code < 500:
             self.client_error_timestamp = now
             self.client_error_last_logged = now
@@ -155,8 +101,10 @@ class PushOver(user.notify.AbstractNotifier):
         response_body = response.read().decode()
         try:
             response_dict = json.loads(response_body)
-            log.error("%s for %s", '\n'.join(response_dict['errors']), obs)
+            errors = '\n'.join(response_dict['errors'])
+            self.logger.logerr(self.name, f"{errors} for {msg_data.name}")
         except json.JSONDecodeError as exception:
-            log.error("Unable to parse '%s' for %s.", exception.doc, obs)
-            log.error("Error at '%s', line: '%s' column: '%s' for %s", exception.pos, exception.lineno, exception.colno, obs)
+            self.logger.logerr(self.name, f"Unable to parse '{exception.doc}' for {msg_data.name}.")
+            self.logger.logerr(self.name, (f"Error at '{exception.pos}', line: '{exception.lineno}' "
+                                           f"column: '{exception.colno}' for {msg_data.name}"))
         return False

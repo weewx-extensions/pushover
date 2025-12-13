@@ -15,6 +15,10 @@ Configuration:
     # Default is True.
     enable = True
 
+    # The number of seconds to wait for the notification to be sent and processed.
+    # Default is None
+    notification_timeout = None
+
 [[notifier]]
         # Controls if notifications are sent.
         # Valid values: True or False
@@ -96,6 +100,7 @@ Configuration:
 '''
 
 import argparse
+import asyncio
 import logging
 import os
 import time
@@ -109,25 +114,45 @@ from weewx.engine import StdService
 import weeutil
 from weeutil.weeutil import to_bool, to_int
 
-log = logging.getLogger(__name__)
-
 def format_timestamp(ts, format_str="%Y-%m-%d %H:%M:%S %Z"):
     ''' Format a timestamp for human consumption. '''
     return f"{time.strftime(format_str, time.localtime(ts))}"
+
+class Logger:
+    ''' Manage the logging '''
+    def __init__(self):
+        self.log = logging.getLogger(__name__)
+
+    def logdbg(self, caller, msg):
+        """ log debug messages """
+        self.log.debug("(%s) %s", caller, msg)
+
+    def loginf(self, caller, msg):
+        """ log informational messages """
+        self.log.info("(%s) %s", caller, msg)
+
+    def logerr(self, caller, msg):
+        """ log error messages """
+        self.log.error("(%s) %s", caller, msg)
 
 class Notify(StdService):
     """ Manage sending notifications."""
     def __init__(self, engine, config_dict):
         """Initialize an instance of Notify"""
         super().__init__(engine, config_dict)
+        self.name = self.__class__.__name__
 
-        self.notifier_class_name = 'user.pushover.PushOver'
+        self.logger = Logger()
+
         service_dict = config_dict.get('Notify', {})
 
         enable = to_bool(service_dict.get('enable', True))
         if not enable:
-            log.info("Notify is not enabled, exiting")
+            self.logger.loginf(self.name, "Notify is not enabled, exiting")
             return
+
+        self.notification_timeout = to_int(service_dict.get('notification_timeout', None))
+        self.notifier_class_name = 'user.pushover.PushOver'
 
         notifier_dict = service_dict.get('notifier', {})
 
@@ -145,7 +170,7 @@ class Notify(StdService):
                                                                              count,
                                                                              default_loop_wait_time,
                                                                              default_loop_return_notification)
-        log.info("loop observations: %s", self.loop_observations)
+        self.logger.loginf(self.name, f"loop observations: {self.loop_observations}")
 
         self.archive_observations = {}
         if 'archive' in service_dict:
@@ -157,12 +182,12 @@ class Notify(StdService):
                                                                                 count,
                                                                                 default_archive_wait_time,
                                                                                 default_archive_return_notification)
-        log.info("archive observations: %s", self.archive_observations)
+        self.logger.loginf(self.name, f"archive observations: {self.archive_observations}")
 
         self.missing_observations = {}
 
         notifier_class = weeutil.weeutil.get_object(self.notifier_class_name)
-        self.notifier = notifier_class(notifier_dict)
+        self.notifier = notifier_class(self.logger, notifier_dict)
 
         self.executor = ThreadPoolExecutor(max_workers=5)
 
@@ -209,14 +234,12 @@ class Notify(StdService):
             'label': label,
             'current_value': value,
         }
-        log.debug("  Min check if %s is less than %s for %s%s", value, observation_detail['value'], name, label)
+        self.logger.logdbg(self.name, f"  Min check if {value} is less than {observation_detail['value']} for {name}{label}")
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
-        log.debug("    Time delta Min is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
-        log.debug("    Running count Min is %s and threshold is %s for %s%s",
-                  observation_detail['counter'],
-                  observation_detail['count'],
-                  name,
-                  label)
+        self.logger.logdbg(self.name, (f"    Time delta Min is {time_delta} and "
+                                       f"threshold is {observation_detail['wait_time']} for {name}{label}"))
+        self.logger.logdbg(self.name, (f"    Running count Min is {observation_detail['counter']} "
+                                       f"and threshold is {observation_detail['count']} for {name}{label}"))
 
         if value < observation_detail['value']:
             if observation_detail['counter'] == 0:
@@ -241,17 +264,13 @@ class Notify(StdService):
                         result2['date_time'] = observation_detail['threshold_passed']['timestamp']
                         result = result2
                     else:
-                        log.debug("    Notification not requested for %s%s going under Min threshold at %s and count of %s.",
-                                  name,
-                                  label,
-                                  format_timestamp(observation_detail['threshold_passed']['timestamp']),
-                                  observation_detail['counter'])
+                        self.logger.logdbg(self.name, (f"    Notification not requested for {name}{label} going under Min threshold "
+                                                       f"at {format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
+                                                       f"and count of {observation_detail['counter']}."))
                 else:
-                    log.info("No notifcations had been sent for %s%s going under Min threshold at %s and count of %s.",
-                             name,
-                             label,
-                             format_timestamp(observation_detail['threshold_passed']['timestamp']),
-                             observation_detail['counter'])
+                    self.logger.loginf(self.name, (f"No notifcations had been sent for {name}{label} going under Min threshold at "
+                                                   f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
+                                                   f"and count of {observation_detail['counter']}."))
 
                 observation_detail['counter'] = 0
                 # Setting to 1 is a hack, this allows the time threshold to be met
@@ -275,14 +294,12 @@ class Notify(StdService):
             'label': label,
             'current_value': value,
         }
-        log.debug("  Max check if %s is greater than %s for %s%s", value, observation_detail['value'], name, label)
+        self.logger.logdbg(self.name, f"  Max check if {value} is greater than {observation_detail['value']} for {name}{label}")
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
-        log.debug("    Time delta Max is %s and threshold is %s for %s%s", time_delta, observation_detail['wait_time'], name, label)
-        log.debug("    Running count Max is %s and threshold is %s for %s%s",
-                  observation_detail['counter'],
-                  observation_detail['count'],
-                  name,
-                  label)
+        self.logger.logdbg(self.name, (f"    Time delta Max is {time_delta} and threshold is "
+                                       f"{observation_detail['wait_time']} for {name}{label}"))
+        self.logger.logdbg(self.name, (f"    Running count Max is {observation_detail['counter']} and "
+                                       f"threshold is {observation_detail['count']} for {name}{label}"))
 
         if value > observation_detail['value']:
             if observation_detail['counter'] == 0:
@@ -307,17 +324,13 @@ class Notify(StdService):
                         result2['date_time'] = observation_detail['threshold_passed']['timestamp']
                         result = result2
                     else:
-                        log.debug("    Notification not requested for %s%s going over Max threshold at %s and count of %s.",
-                                  name,
-                                  label,
-                                  format_timestamp(observation_detail['threshold_passed']['timestamp']),
-                                  observation_detail['counter'])
+                        self.logger.logdbg(self.name, (f"    Notification not requested for {name}{label} going over Max threshold "
+                                                       f"at {format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
+                                                       f"and count of {observation_detail['counter']}."))
                 else:
-                    log.info("No notifcations had been sent for %s%s going over Max threshold at %s and count of %s.",
-                             name,
-                             label,
-                             format_timestamp(observation_detail['threshold_passed']['timestamp']),
-                             observation_detail['counter'])
+                    self.logger.loginf(self.name, (f"No notifcations had been sent for {name}{label} going over Max threshold at "
+                                                   f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} and "
+                                                   f"count of {observation_detail['counter']}."))
 
                 observation_detail['counter'] = 0
                 # Setting to 1 is a hack, this allows the time threshold to be met
@@ -341,18 +354,12 @@ class Notify(StdService):
             'label': label,
             'current_value': value,
         }
-        log.debug("  Equal check if %s is equal to %s for %s%s", value, observation_detail['value'], name, label)
+        self.logger.logdbg(self.name, f"  Equal check if {value} is equal to {observation_detail['value']} for {name}{label}")
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
-        log.debug("    Time delta Equal is %s and threshold is %s for %s%s",
-                  time_delta,
-                  observation_detail['wait_time'],
-                  name,
-                  label)
-        log.debug("    Running count Equal is %s and threshold is %s for %s%s",
-                  observation_detail['counter'],
-                  observation_detail['count'],
-                  name,
-                  label)
+        self.logger.logdbg(self.name, (f"    Time delta Equal is {time_delta} and threshold is "
+                                       f"{observation_detail['wait_time']} for {name}{label}"))
+        self.logger.logdbg(self.name, (f"    Running count Equal is {observation_detail['counter']} and "
+                                       f"threshold is {observation_detail['count']} for {name}{label}"))
 
         if value != observation_detail['value']:
             if observation_detail['counter'] == 0:
@@ -377,17 +384,13 @@ class Notify(StdService):
                         result2['date_time'] = observation_detail['threshold_passed']['timestamp']
                         result = result2
                     else:
-                        log.debug("    Notification not requested for %s%s being Not Equal at %s and count of %s.",
-                                  name,
-                                  label,
-                                  format_timestamp(observation_detail['threshold_passed']['timestamp']),
-                                  observation_detail['counter'])
+                        self.logger.logdbg(self.name, (f"    Notification not requested for {name}{label} being Not Equal at "
+                                                       f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
+                                                       f"and count of {observation_detail['counter']}."))
                 else:
-                    log.info("No notifcations had been sent for %s%s being Not Equal at %s and count of %s.",
-                             name,
-                             label,
-                             format_timestamp(observation_detail['threshold_passed']['timestamp']),
-                             observation_detail['counter'])
+                    self.logger.loginf(self.name, (f"No notifcations had been sent for {name}{label} being Not Equal at "
+                                                   f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} and "
+                                                   f"count of {observation_detail['counter']}."))
 
                 observation_detail['counter'] = 0
                 # Setting to 1 is a hack, this allows the time threshold to be met
@@ -401,7 +404,7 @@ class Notify(StdService):
 
     def check_missing_value(self, observation, name, label, observation_detail):
         ''' Check if a notification should be sent for a missing value.'''
-        log.debug("  Processing missing for %s%s", name, label)
+        self.logger.logdbg(self.name, f"  Processing missing for {name}{label}")
         now = int(time.time())
         result2 = {
             'threshold_type': 'missing',
@@ -411,17 +414,10 @@ class Notify(StdService):
             'current_value': None,
         }
         time_delta = now - observation_detail['last_sent_timestamp']
-        log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s",
-                  time_delta,
-                  observation_detail['wait_time'],
-                  observation_detail['last_sent_timestamp'],
-                  observation,
-                  label)
-        log.debug("    Running count is %s and threshold is %s for %s%s",
-                  observation_detail['counter'],
-                  observation_detail['count'],
-                  observation,
-                  label)
+        self.logger.logdbg(self.name, (f"    Time delta is {time_delta}, threshold is {observation_detail['wait_time']}, "
+                                       f"and last sent is {observation_detail['last_sent_timestamp']} for {observation}{label}"))
+        self.logger.logdbg(self.name, (f"    Running count is {observation_detail['counter']} and "
+                                       f"threshold is {observation_detail['count']} for {observation}{label}"))
 
         if observation_detail['counter'] == 0:
             self.missing_observations[observation] = {}
@@ -442,7 +438,7 @@ class Notify(StdService):
     def check_value_returned(self, observation, name, label, observation_detail, value):
         ''' Check if a notification should be sent when a missing value has returned. '''
         # ToDo: I think this needs work - think it is closer
-        log.debug("  Processing returned value for observation %s%s", name, label)
+        self.logger.logdbg(self.name, f"  Processing returned value for observation {name}{label}")
         result = None
         now = int(time.time())
         result2 = {
@@ -453,16 +449,10 @@ class Notify(StdService):
             'current_value': value,
         }
         time_delta = now - observation_detail['last_sent_timestamp']
-        log.debug("    Time delta is %s, threshold is %s, and last sent is %s for %s%s",
-                  time_delta,
-                  observation_detail['wait_time'],
-                  observation_detail['last_sent_timestamp'],
-                  observation, label)
-        log.debug("    Running count is %s and threshold is %s for %s%s",
-                  observation_detail['counter'],
-                  observation_detail['count'],
-                  observation,
-                  label)
+        self.logger.logdbg(self.name, (f"    Time delta is {time_delta} threshold is {observation_detail['wait_time']}, "
+                                       f"and last sent is {observation_detail['last_sent_timestamp']} for {observation}{label}"))
+        self.logger.logdbg(self.name, (f"    Running count is {observation_detail['counter']} and threshold is "
+                                       f"{observation_detail['count']} for {observation}{label}"))
 
         if observation_detail['counter'] > 0:
             if self.missing_observations[observation]['notification_count'] > 0:
@@ -472,16 +462,13 @@ class Notify(StdService):
                     result2['date_time'] = self.missing_observations[observation]['missing_time']
                     result = result2
                 else:
-                    log.debug("    Notification not requested for %s%s gone missing at %s and count of %s.",
-                              name,
-                              label,
-                              format_timestamp(self.missing_observations[observation]['missing_time']),
-                              observation_detail['counter'])
+                    self.logger.logdbg(self.name, (f"    Notification not requested for {name}{label} gone missing at "
+                                                   f"{format_timestamp(self.missing_observations[observation]['missing_time'])} and "
+                                                   f"count of {observation_detail['counter']}."))
             else:
-                log.info("No notifcations had been sent for returning %s%s gone missing at %s and count of %s.",
-                         name,
-                         label,
-                         format_timestamp(self.missing_observations[observation]['missing_time']), observation_detail['counter'])
+                self.logger.loginf(self.name, (f"No notifcations had been sent for returning {name}{label} gone missing at "
+                                               f"{format_timestamp(self.missing_observations[observation]['missing_time'])} "
+                                               f"and count of {observation_detail['counter']}."))
             observation_detail['counter'] = 0
             # Setting to 1 is a hack, this allows the time threshold to be met
             # But does not short circuit checking the count threshold
@@ -498,14 +485,18 @@ class Notify(StdService):
 
         return result
 
-    def _process_data(self, data, observations):
+    async def _process_data(self, data, observations):
         # log.debug("Processing record: %s", data)
         now = time.time()
+        tasks = []
+        task_names = {}
+        self.notifier.initialize()
+
         for _obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
 
             if observation in data and data[observation] is not None:
-                log.debug("Processing observation: %s%s", observation, observation_detail['label'])
+                self.logger.logdbg(self.name, f"Processing observation: {observation}{observation_detail['label']}")
                 detail_type = 'missing'
                 if observation_detail.get('missing', None):
                     result = self.check_value_returned(observation,
@@ -517,7 +508,9 @@ class Notify(StdService):
                         # This is when a missing value has returned
                         # Therefore, do not reset sent timestamp
                         # self.executor.submit(self._send_notification, event.packet)
-                        self.notifier.send_notification(result)
+                        task_name = f"{observation}-{detail_type}-{now}"
+                        self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and not recorded.")
+                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'min'
                 if observation_detail.get('min', None):
@@ -526,9 +519,10 @@ class Notify(StdService):
                                                   observation_detail[detail_type],
                                                   data[observation])
                     if result:
-                        # self.executor.submit(self._send_notification, event.packet)
-                        if self.notifier.send_notification(result):
-                            observation_detail[detail_type]['last_sent_timestamp'] = now
+                        task_name = f"{observation}-{detail_type}-{now}"
+                        task_names[task_name] = observation_detail[detail_type]
+                        self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
+                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'max'
                 if observation_detail.get('max', None):
@@ -537,9 +531,10 @@ class Notify(StdService):
                                                   observation_detail[detail_type],
                                                   data[observation])
                     if result:
-                        # self.executor.submit(self._send_notification, event.packet)
-                        if self.notifier.send_notification(result):
-                            observation_detail[detail_type]['last_sent_timestamp'] = now
+                        task_name = f"{observation}-{detail_type}-{now}"
+                        task_names[task_name] = observation_detail[detail_type]
+                        self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
+                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'equal'
                 if observation_detail.get('equal', None):
@@ -549,9 +544,10 @@ class Notify(StdService):
                                                     data[observation])
 
                     if result:
-                        # self.executor.submit(self._send_notification, event.packet)
-                        if self.notifier.send_notification(result):
-                            observation_detail[detail_type]['last_sent_timestamp'] = now
+                        task_name = f"{observation}-{detail_type}-{now}"
+                        task_names[task_name] = observation_detail[detail_type]
+                        self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
+                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
             detail_type = 'missing'
             if observation not in data and observation_detail.get('missing', None):
@@ -560,19 +556,36 @@ class Notify(StdService):
                                                   observation_detail['label'],
                                                   observation_detail['missing'])
                 if result:
-                    # self.executor.submit(self._send_notification, event.packet)
-                    if self.notifier.send_notification(result):
-                        observation_detail[detail_type]['last_sent_timestamp'] = now
+                    task_name = f"{observation}-{detail_type}-{now}"
+                    task_names[task_name] = observation_detail[detail_type]
+                    self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
+                    tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
+
+        if tasks:
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=self.notification_timeout)
+            for task in done:
+                result = task.result()
+                task_name = task.get_name()
+                self.logger.logdbg(self.name, f"Task, {task_name}, completed with result, {result}.")
+                if task_name in task_names and result:
+                    task_names[task_name]['last_sent_timestamp'] = now
+
+            for task in pending:
+                task_name = task.get_name()
+                cancelled = task.cancel()
+                self.logger.logerr(self.name, f"Task, {task_name}, cancellation attempt with result {cancelled}.")
+
+        await self.notifier.finalize()
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
         if not self.notifier.throttle_notification():
-            self._process_data(event.record, self.archive_observations)
+            asyncio.run(self._process_data(event.record, self.archive_observations))
 
     def new_loop_packet(self, event):
         """ Handle the new loop packet event. """
         if not self.notifier.throttle_notification():
-            self._process_data(event.packet, self.loop_observations)
+            asyncio.run(self._process_data(event.packet, self.loop_observations))
 
     def shutDown(self):
         """Run when an engine shutdown is requested."""
@@ -580,8 +593,78 @@ class Notify(StdService):
 
 class AbstractNotifier():
     ''' Abstract class for sending notifications.'''
-    def __init__(self):
+    def __init__(self, logger, _config_dict):
         self.name = self.__class__.__name__
+        self.logger = logger
+
+    async def initialize(self):
+        ''' Perform any final processing for this 'round'. '''
+        return
+
+    def throttle_notification(self):
+        ''' Check if the call should be performed or throttled.'''
+        raise NotImplementedError()
+
+    def build_title(self, msg_data):
+        """ Build a title based on threshold status."""
+        return f"Unexpected value for {msg_data.name}."
+
+    def build_message(self, msg_data):
+        """ Build a message based on threshold status."""
+        msg_template = {
+            'equal': {
+                'outside': ("At {date_time} {name}{label} is no longer equal to threshold of {threshold_value}. "
+                            "Current value is {current_value}. {notifications_sent} sent.\n"),
+                'within': ("{name}{label} Not Equal at {date_time} is within threshold with value {current_value}, "
+                           "{notifications_sent} notifications sent.\n"),
+            },
+            'max': {
+                'outside': ("At {date_time} {name}{label} went above threshold of {threshold_value}. "
+                            "Current value is {current_value}. {notifications_sent} sent.\n"),
+                'within': ("{name}{label} over Max threshold at {date_time} is within threshold with value {current_value}, "
+                           "{notifications_sent} notifications sent.\n"),
+            },
+            'min': {
+                'outside': ("At {date_time} {name}{label} went below threshold of {threshold_value}. "
+                            "Current value is {current_value}. {notifications_sent} sent.\n"),
+                'within': ("{name}{label} over Min threshold at {date_time} is within threshold with value {current_value}, "
+                           "{notifications_sent} notifications sent.\n"),
+            },
+        }
+
+        msg_missing_template = "{name}{label} missing at {date_time}, {notifications_sent} notifications sent.\n"
+
+        msg_returned_template = ("{name}{label} missing at {date_time} returned with value {current_value}, "
+                                 "{notifications_sent} notification sent.\n")
+
+        if msg_data.threshold_type == 'missing' and msg_data.type == 'outside':
+            return msg_missing_template.format(name=msg_data.name,
+                                               label=msg_data.label,
+                                               date_time=format_timestamp(msg_data.date_time),
+                                               notifications_sent=msg_data.notifications_sent)
+
+        if msg_data.threshold_type == 'missing' and msg_data.type == 'within':
+            return msg_returned_template.format(name=msg_data.name,
+                                                label=msg_data.label,
+                                                date_time=format_timestamp(msg_data.date_time),
+                                                current_value=msg_data.current_value,
+                                                notifications_sent=msg_data.notifications_sent)
+
+        return msg_template[msg_data.threshold_type][msg_data.type].format(date_time=format_timestamp(msg_data.date_time),
+                                                                           name=msg_data.name,
+                                                                           label=msg_data.label,
+                                                                           threshold_value=msg_data.threshold_value,
+                                                                           current_value=msg_data.current_value,
+                                                                           notifications_sent=msg_data.notifications_sent
+                                                                           )
+
+    async def send_notification(self, _msg_data):
+        ''' Send the notification.'''
+        raise NotImplementedError('')
+
+    async def finalize(self):
+        ''' Perform any final processing for this 'round'. '''
+        return
 
 def main():  # pragma no cover
     """ The main routine. """
