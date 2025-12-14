@@ -366,10 +366,11 @@ class TestObservationEqualCheck(unittest.TestCase):
                 time.time()
             SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
 
-            result = SUT.check_equal_value(name,
-                                           label,
-                                           SUT.archive_observations[observation]['equal'],
-                                           value)
+            result = SUT.check_within('equal',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      value)
 
             self.assertIsNone(result)
 
@@ -448,10 +449,11 @@ class TestObservationEqualCheck(unittest.TestCase):
             SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
                 notification_count
 
-            result = SUT.check_equal_value(name,
-                                           label,
-                                           SUT.archive_observations[observation]['equal'],
-                                           value)
+            result = SUT.check_within('equal',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      value)
 
             self.assertIsNone(result)
 
@@ -476,10 +478,11 @@ class TestObservationEqualCheck(unittest.TestCase):
         with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
             mock_weeutil.get_object.return_value = MockClass
             SUT = Notify(mock_engine, config)
-            result = SUT.check_equal_value(name,
-                                           label,
-                                           SUT.archive_observations[observation]['equal'],
-                                           record_value)
+            result = SUT.check_within('equal',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      record_value)
 
             self.assertIsNone(result)
 
@@ -524,10 +527,11 @@ class TestObservationEqualCheck(unittest.TestCase):
             SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
             SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
-            result = SUT.check_equal_value(name,
-                                           label,
-                                           SUT.archive_observations[observation]['equal'],
-                                           record_value)
+            result = SUT.check_within('equal',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      record_value)
 
             self.assertEqual(result, expected_result)
 
@@ -557,10 +561,11 @@ class TestObservationMaxCheck(unittest.TestCase):
                 time.time()
             SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
 
-            result = SUT.check_max_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         value)
+            result = SUT.check_within('max',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      value)
 
             self.assertIsNone(result)
 
@@ -639,10 +644,11 @@ class TestObservationMaxCheck(unittest.TestCase):
             SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
                 notification_count
 
-            result = SUT.check_max_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         value)
+            result = SUT.check_within('max',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      value)
 
             self.assertIsNone(result)
 
@@ -667,10 +673,11 @@ class TestObservationMaxCheck(unittest.TestCase):
         with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
             mock_weeutil.get_object.return_value = MockClass
             SUT = Notify(mock_engine, config)
-            result = SUT.check_max_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         record_value)
+            result = SUT.check_within('max',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      record_value)
 
             self.assertIsNone(result)
 
@@ -716,10 +723,11 @@ class TestObservationMaxCheck(unittest.TestCase):
             SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
             SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
-            result = SUT.check_max_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         record_value)
+            result = SUT.check_within('max',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      record_value)
 
             self.assertEqual(result, expected_result)
 
@@ -749,10 +757,11 @@ class TestObservationMinCheck(unittest.TestCase):
                 time.time()
             SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = 0
 
-            result = SUT.check_min_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         value)
+            result = SUT.check_within('min',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      value)
 
             self.assertIsNone(result)
 
@@ -831,10 +840,11 @@ class TestObservationMinCheck(unittest.TestCase):
             SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = \
                 notification_count
 
-            result = SUT.check_min_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         value)
+            result = SUT.check_within('min',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      value)
 
             self.assertIsNone(result)
 
@@ -859,10 +869,11 @@ class TestObservationMinCheck(unittest.TestCase):
         with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
             mock_weeutil.get_object.return_value = MockClass
             SUT = Notify(mock_engine, config)
-            result = SUT.check_min_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         record_value)
+            result = SUT.check_within('min',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      record_value)
 
             self.assertIsNone(result)
 
@@ -908,10 +919,11 @@ class TestObservationMinCheck(unittest.TestCase):
             SUT.archive_observations[observation]['equal']['threshold_passed']['timestamp'] = now
             SUT.archive_observations[observation]['equal']['threshold_passed']['notification_count'] = notification_count
 
-            result = SUT.check_min_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         record_value)
+            result = SUT.check_within('min',
+                                      name,
+                                      label,
+                                      SUT.archive_observations[observation]['equal'],
+                                      record_value)
 
             self.assertEqual(result, expected_result)
 
