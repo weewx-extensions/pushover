@@ -413,10 +413,10 @@ class TestObservationEqualCheck(unittest.TestCase):
                 notification_count
             SUT.archive_observations[observation]['equal']['counter'] = 1
 
-            result = SUT.check_equal_value(name,
-                                           label,
-                                           SUT.archive_observations[observation]['equal'],
-                                           value)
+            result = SUT.check_equal_value2(name,
+                                            label,
+                                            SUT.archive_observations[observation]['equal'],
+                                            value)
 
             self.assertEqual(result, expected_result)
 
@@ -604,10 +604,10 @@ class TestObservationMaxCheck(unittest.TestCase):
                 notification_count
             SUT.archive_observations[observation]['equal']['counter'] = 1
 
-            result = SUT.check_max_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         value)
+            result = SUT.check_max_value2(name,
+                                          label,
+                                          SUT.archive_observations[observation]['equal'],
+                                          value)
 
             self.assertEqual(result, expected_result)
 
@@ -796,10 +796,10 @@ class TestObservationMinCheck(unittest.TestCase):
                 notification_count
             SUT.archive_observations[observation]['equal']['counter'] = 1
 
-            result = SUT.check_min_value(name,
-                                         label,
-                                         SUT.archive_observations[observation]['equal'],
-                                         value)
+            result = SUT.check_min_value2(name,
+                                          label,
+                                          SUT.archive_observations[observation]['equal'],
+                                          value)
 
             self.assertEqual(result, expected_result)
 
