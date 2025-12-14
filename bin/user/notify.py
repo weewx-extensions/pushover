@@ -270,113 +270,23 @@ class Notify(StdService):
 
         return result
 
-    def check_min_value2(self, name, label, observation_detail, value):
-        ''' Check if an observation is less than a desired value.
-            Send a notification if time and cound thresholds have been met. '''
-        result = None
-        now = int(time.time())
-        result2 = {
-            'threshold_type': 'min',
-            'threshold_value': observation_detail['value'],
-            'name': name,
-            'label': label,
-            'current_value': value,
-        }
-        self.logger.logdbg(self.name, f"  Min check if {value} is less than {observation_detail['value']} for {name}{label}")
-        time_delta = abs(now - observation_detail['last_sent_timestamp'])
-        self.logger.logdbg(self.name, (f"    Time delta Min is {time_delta} and "
-                                       f"threshold is {observation_detail['wait_time']} for {name}{label}"))
-        self.logger.logdbg(self.name, (f"    Running count Min is {observation_detail['counter']} "
-                                       f"and threshold is {observation_detail['count']} for {name}{label}"))
-
-        if observation_detail['counter'] > 0:
-            if observation_detail['threshold_passed']['notification_count'] > 0:
-                if observation_detail['return_notification']:
-                    result2['type'] = 'within'
-                    result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
-                    result2['date_time'] = observation_detail['threshold_passed']['timestamp']
-                    result = result2
-                else:
-                    self.logger.logdbg(self.name, (f"    Notification not requested for {name}{label} going under Min threshold "
-                                                   f"at {format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
-                                                   f"and count of {observation_detail['counter']}."))
-            else:
-                self.logger.loginf(self.name, (f"No notifcations had been sent for {name}{label} going under Min threshold at "
-                                               f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
-                                               f"and count of {observation_detail['counter']}."))
-
-            observation_detail['counter'] = 0
-            # Setting to 1 is a hack, this allows the time threshold to be met
-            # But does not short circuit checking the count threshold
-            observation_detail['last_sent_timestamp'] = 1
-
-        if result:
-            return namedtuple('Result', result.keys())(**result)
-
-        return result
-
-    def check_max_value2(self, name, label, observation_detail, value):
-        ''' Check if an observation is greater than a desired value.
-            Send a notification if time and cound thresholds have been met. '''
-        result = None
-        now = int(time.time())
-        result2 = {
-            'threshold_type': 'max',
-            'threshold_value': observation_detail['value'],
-            'name': name,
-            'label': label,
-            'current_value': value,
-        }
-        self.logger.logdbg(self.name, f"  Max check if {value} is greater than {observation_detail['value']} for {name}{label}")
-        time_delta = abs(now - observation_detail['last_sent_timestamp'])
-        self.logger.logdbg(self.name, (f"    Time delta Max is {time_delta} and threshold is "
-                                       f"{observation_detail['wait_time']} for {name}{label}"))
-        self.logger.logdbg(self.name, (f"    Running count Max is {observation_detail['counter']} and "
-                                       f"threshold is {observation_detail['count']} for {name}{label}"))
-
-        if observation_detail['counter'] > 0:
-            if observation_detail['threshold_passed']['notification_count'] > 0:
-                if observation_detail['return_notification']:
-                    result2['type'] = 'within'
-                    result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
-                    result2['date_time'] = observation_detail['threshold_passed']['timestamp']
-                    result = result2
-                else:
-                    self.logger.logdbg(self.name, (f"    Notification not requested for {name}{label} going over Max threshold "
-                                                   f"at {format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
-                                                   f"and count of {observation_detail['counter']}."))
-            else:
-                self.logger.loginf(self.name, (f"No notifcations had been sent for {name}{label} going over Max threshold at "
-                                               f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} and "
-                                               f"count of {observation_detail['counter']}."))
-
-            observation_detail['counter'] = 0
-            # Setting to 1 is a hack, this allows the time threshold to be met
-            # But does not short circuit checking the count threshold
-            observation_detail['last_sent_timestamp'] = 1
-
-        if result:
-            return namedtuple('Result', result.keys())(**result)
-
-        return result
-
-    def check_equal_value2(self, name, label, observation_detail, value):
+    def check_outside(self, notification_type, name, label, observation_detail, value):
         ''' Check if an observation is not equal to desired value.
             Send a notification if time and cound thresholds have been met. '''
         result = None
         now = int(time.time())
         result2 = {
-            'threshold_type': 'equal',
+            'threshold_type': notification_type,
             'threshold_value': observation_detail['value'],
             'name': name,
             'label': label,
             'current_value': value,
         }
-        self.logger.logdbg(self.name, f"  Equal check if {value} is equal to {observation_detail['value']} for {name}{label}")
+        self.logger.logdbg(self.name, f"  {notification_type} check {value} to {observation_detail['value']} for {name}{label}")
         time_delta = abs(now - observation_detail['last_sent_timestamp'])
-        self.logger.logdbg(self.name, (f"    Time delta Equal is {time_delta} and threshold is "
+        self.logger.logdbg(self.name, (f"    Time delta {notification_type} is {time_delta} and threshold is "
                                        f"{observation_detail['wait_time']} for {name}{label}"))
-        self.logger.logdbg(self.name, (f"    Running count Equal is {observation_detail['counter']} and "
+        self.logger.logdbg(self.name, (f"    Running count {notification_type} is {observation_detail['counter']} and "
                                        f"threshold is {observation_detail['count']} for {name}{label}"))
 
         if observation_detail['counter'] > 0:
@@ -387,11 +297,12 @@ class Notify(StdService):
                     result2['date_time'] = observation_detail['threshold_passed']['timestamp']
                     result = result2
                 else:
-                    self.logger.logdbg(self.name, (f"    Notification not requested for {name}{label} being Not Equal at "
+                    self.logger.logdbg(self.name, (f"    Notification not requested for {name}{label} "
+                                                   f"being outside {notification_type} at "
                                                    f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
                                                    f"and count of {observation_detail['counter']}."))
             else:
-                self.logger.loginf(self.name, (f"No notifcations had been sent for {name}{label} being Not Equal at "
+                self.logger.loginf(self.name, (f"No notifcations had been sent for {name}{label} outside {notification_type} at "
                                                f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} and "
                                                f"count of {observation_detail['counter']}."))
 
@@ -523,10 +434,11 @@ class Notify(StdService):
                                                    observation_detail[detail_type],
                                                    data[observation])
                     else:
-                        result = self.check_min_value2(observation_detail['name'],
-                                                       observation_detail['label'],
-                                                       observation_detail[detail_type],
-                                                       data[observation])
+                        result = self.check_outside('min',
+                                                    observation_detail['name'],
+                                                    observation_detail['label'],
+                                                    observation_detail[detail_type],
+                                                    data[observation])
                     if result:
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
@@ -542,10 +454,11 @@ class Notify(StdService):
                                                    observation_detail[detail_type],
                                                    data[observation])
                     else:
-                        result = self.check_max_value2(observation_detail['name'],
-                                                       observation_detail['label'],
-                                                       observation_detail[detail_type],
-                                                       data[observation])
+                        result = self.check_outside('max',
+                                                    observation_detail['name'],
+                                                    observation_detail['label'],
+                                                    observation_detail[detail_type],
+                                                    data[observation])
                     if result:
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
@@ -561,10 +474,11 @@ class Notify(StdService):
                                                    observation_detail[detail_type],
                                                    data[observation])
                     else:
-                        result = self.check_equal_value2(observation_detail['name'],
-                                                         observation_detail['label'],
-                                                         observation_detail[detail_type],
-                                                         data[observation])
+                        result = self.check_outside('equal',
+                                                    observation_detail['name'],
+                                                    observation_detail['label'],
+                                                    observation_detail[detail_type],
+                                                    data[observation])
                     if result:
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
