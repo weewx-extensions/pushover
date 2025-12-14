@@ -340,7 +340,7 @@ class Notify(StdService):
 
         observation_detail['counter'] += 1
         if time_delta >= observation_detail['wait_time']:
-            if observation_detail['counter'] >= observation_detail['count'] or observation_detail['last_sent_timestamp'] == 0:
+            if observation_detail['counter'] >= observation_detail['count']:
                 observation_detail['threshold_passed']['notification_count'] += 1
                 result2['type'] = 'outside'
                 result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
@@ -348,8 +348,8 @@ class Notify(StdService):
                 return namedtuple('Result', result2.keys())(**result2)
         return None
 
-    # ToDo: replace with checkoutside
-    def check_value_returned(self, notification_type, name, label, observation_detail, value):
+    # ToDo: replace with check_outside
+    def zz_check_value_returned(self, notification_type, name, label, observation_detail, value):
         ''' Check if a notification should be sent when a missing value has returned. '''
         # ToDo: I think this needs work - think it is closer
         self.logger.logdbg(self.name, f"  Processing returned value for observation {name}{label}")
@@ -409,11 +409,11 @@ class Notify(StdService):
                 self.logger.logdbg(self.name, f"Processing observation: {observation}{observation_detail['label']}")
                 detail_type = 'missing'
                 if observation_detail.get('missing', None):
-                    result = self.check_value_returned('missing',
-                                                       observation_detail['name'],
-                                                       observation_detail['label'],
-                                                       observation_detail[detail_type],
-                                                       data[observation])
+                    result = self.check_outside('missing',
+                                                observation_detail['name'],
+                                                observation_detail['label'],
+                                                observation_detail[detail_type],
+                                                data[observation])
                     if result:
                         # This is when a missing value has returned
                         # Therefore, do not reset sent timestamp
