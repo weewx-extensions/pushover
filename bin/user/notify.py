@@ -427,7 +427,7 @@ class Notify(StdService):
 
                 detail_type = 'min'
                 if observation_detail.get('min', None):
-                    if data[observation] < observation_detail['value']:
+                    if data[observation] < observation_detail[detail_type]['value']:
                         result = self.check_within('min',
                                                    observation_detail['name'],
                                                    observation_detail['label'],
@@ -447,7 +447,7 @@ class Notify(StdService):
 
                 detail_type = 'max'
                 if observation_detail.get('max', None):
-                    if data[observation] > observation_detail['value']:
+                    if data[observation] > observation_detail[detail_type]['value']:
                         result = self.check_within('max',
                                                    observation_detail['name'],
                                                    observation_detail['label'],
@@ -467,7 +467,7 @@ class Notify(StdService):
 
                 detail_type = 'equal'
                 if observation_detail.get('equal', None):
-                    if data[observation] != observation_detail['value']:
+                    if data[observation] != observation_detail[detail_type]['value']:
                         result = self.check_within('equal',
                                                    observation_detail['name'],
                                                    observation_detail['label'],
