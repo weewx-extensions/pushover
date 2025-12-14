@@ -316,16 +316,16 @@ class Notify(StdService):
         return result
 
     # ToDo: replace with check_within
-    def check_missing_value(self, name, label, observation_detail):
+    def check_missing_value(self, notification_type, name, label, observation_detail, value):
         ''' Check if a notification should be sent for a missing value.'''
         self.logger.logdbg(self.name, f"  Processing missing for {name}{label}")
         now = int(time.time())
         result2 = {
-            'threshold_type': 'missing',
+            'threshold_type': notification_type,
             'threshold_value': observation_detail['value'],
             'name': name,
             'label': label,
-            'current_value': None,
+            'current_value': value,
         }
         time_delta = now - observation_detail['last_sent_timestamp']
         self.logger.logdbg(self.name, (f"    Time delta is {time_delta}, threshold is {observation_detail['wait_time']}, "
@@ -349,10 +349,9 @@ class Notify(StdService):
         return None
 
     # ToDo: replace with checkoutside
-    def check_value_returned(self, zz, name, label, observation_detail, value):
+    def check_value_returned(self, notification_type, name, label, observation_detail, value):
         ''' Check if a notification should be sent when a missing value has returned. '''
         # ToDo: I think this needs work - think it is closer
-        notification_type = 'missing'
         self.logger.logdbg(self.name, f"  Processing returned value for observation {name}{label}")
         result = None
         now = int(time.time())
@@ -410,7 +409,7 @@ class Notify(StdService):
                 self.logger.logdbg(self.name, f"Processing observation: {observation}{observation_detail['label']}")
                 detail_type = 'missing'
                 if observation_detail.get('missing', None):
-                    result = self.check_value_returned(observation,
+                    result = self.check_value_returned('missing',
                                                        observation_detail['name'],
                                                        observation_detail['label'],
                                                        observation_detail[detail_type],
@@ -484,9 +483,11 @@ class Notify(StdService):
 
             detail_type = 'missing'
             if observation not in data and observation_detail.get('missing', None):
-                result = self.check_missing_value(observation_detail['name'],
+                result = self.check_missing_value('missing',
+                                                  observation_detail['name'],
                                                   observation_detail['label'],
-                                                  observation_detail['missing'])
+                                                  observation_detail['missing'],
+                                                  None)
                 if result:
                     task_name = f"{observation}-{detail_type}-{now}"
                     task_names[task_name] = observation_detail[detail_type]
