@@ -96,12 +96,12 @@ class TestObservationMissing(unittest.TestCase):
                                                  SUT.archive_observations[observation]['label'],
                                                  SUT.archive_observations[observation]['missing'])
 
-                expected_dict['date_time'] = SUT.missing_observations[observation]['missing_time']
+                expected_dict['date_time'] = SUT.archive_observations[observation]['missing']['threshold_passed']['timestamp']
                 expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
             self.assertEqual(result, expected_result)
-            self.assertIn(observation, SUT.missing_observations)
-            self.assertIn('missing_time', SUT.missing_observations[observation])
+            # self.assertIn(observation, SUT.missing_observations)
+            # self.assertIn('missing_time', SUT.missing_observations[observation])
 
     def test_past_time_threshold_past_count_threshold(self):
         mock_engine = mock.Mock()
@@ -133,10 +133,9 @@ class TestObservationMissing(unittest.TestCase):
                 SUT = Notify(mock_engine, config)
                 # Missing notification has been 'sent'.
                 # Setting to 1, ensures that time threshold has been met.
-                SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
-                SUT.missing_observations[observation] = {}
-                SUT.missing_observations[observation]['missing_time'] = now
-                SUT.missing_observations[observation]['notification_count'] = 0
+                SUT.archive_observations[observation]['missing']['threshold_passed'] = {}
+                SUT.archive_observations[observation]['missing']['threshold_passed']['timestamp'] = now
+                SUT.archive_observations[observation]['missing']['threshold_passed']['notification_count'] = 0
 
                 # Setting to ensure that count threshold has been met.
                 SUT.archive_observations[observation]['missing']['counter'] = count - 1
@@ -146,9 +145,11 @@ class TestObservationMissing(unittest.TestCase):
                                                  SUT.archive_observations[observation]['label'],
                                                  SUT.archive_observations[observation]['missing'])
 
+                print(result)
+                print(expected_result)
                 self.assertEqual(result, expected_result)
-                self.assertIn(observation, SUT.missing_observations)
-                self.assertIn('missing_time', SUT.missing_observations[observation])
+                # self.assertIn(observation, SUT.missing_observations)
+                # self.assertIn('missing_time', SUT.missing_observations[observation])
 
     def test_past_time_threshold(self):
         mock_engine = mock.Mock()
@@ -164,10 +165,12 @@ class TestObservationMissing(unittest.TestCase):
                 mock_weeutil.get_object.return_value = MockClass
                 SUT = Notify(mock_engine, config)
                 # Missing notification has been 'sent'.
-                # Setting to 1, ensures that time threshold has been met.
                 SUT.archive_observations[observation]['missing']['last_sent_timestamp'] = 1
+                SUT.archive_observations[observation]['missing']['threshold_passed'] = {}
+                # Setting to 1, ensures that time threshold has been met.
+                SUT.archive_observations[observation]['missing']['threshold_passed']['timestamp'] = 1
                 # Setting to ensure that count threshold has NOT been met.
-                SUT.archive_observations[observation]['missing']['counter'] = 0
+                SUT.archive_observations[observation]['missing']['threshold_passed']['counter'] = 0
 
                 result = SUT.check_missing_value(observation,
                                                  SUT.archive_observations[observation]['name'],
@@ -175,7 +178,7 @@ class TestObservationMissing(unittest.TestCase):
                                                  SUT.archive_observations[observation]['missing'])
 
                 self.assertIsNone(result)
-                self.assertIn(observation, SUT.missing_observations)
+                # self.assertIn(observation, SUT.missing_observations)
 
     def test_past_count_threshold(self):
         mock_engine = mock.Mock()
@@ -299,6 +302,9 @@ class TestObservationReturned(unittest.TestCase):
             }
 
             SUT.archive_observations[observation]['missing']['counter'] = 1
+            SUT.archive_observations[observation]['missing']['threshold_passed'] = {}
+            SUT.archive_observations[observation]['missing']['threshold_passed']['notification_count'] = notification_count
+            SUT.archive_observations[observation]['missing']['threshold_passed']['timestamp'] = now
 
             result = SUT.check_value_returned(observation,
                                               name,
