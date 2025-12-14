@@ -91,10 +91,10 @@ class TestObservationMissing(unittest.TestCase):
             with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
                 mock_weeutil.get_object.return_value = MockClass
                 SUT = Notify(mock_engine, config)
-                result = SUT.check_missing_value(observation,
-                                                 SUT.archive_observations[observation]['name'],
+                result = SUT.check_missing_value(SUT.archive_observations[observation]['name'],
                                                  SUT.archive_observations[observation]['label'],
-                                                 SUT.archive_observations[observation]['missing'])
+                                                 SUT.archive_observations[observation]['missing'],
+                                                 None)
 
                 expected_dict['date_time'] = SUT.archive_observations[observation]['missing']['threshold_passed']['timestamp']
                 expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
@@ -140,10 +140,10 @@ class TestObservationMissing(unittest.TestCase):
                 # Setting to ensure that count threshold has been met.
                 SUT.archive_observations[observation]['missing']['counter'] = count - 1
 
-                result = SUT.check_missing_value(observation,
-                                                 SUT.archive_observations[observation]['name'],
+                result = SUT.check_missing_value(SUT.archive_observations[observation]['name'],
                                                  SUT.archive_observations[observation]['label'],
-                                                 SUT.archive_observations[observation]['missing'])
+                                                 SUT.archive_observations[observation]['missing'],
+                                                 None)
 
                 print(result)
                 print(expected_result)
@@ -172,10 +172,10 @@ class TestObservationMissing(unittest.TestCase):
                 # Setting to ensure that count threshold has NOT been met.
                 SUT.archive_observations[observation]['missing']['threshold_passed']['counter'] = 0
 
-                result = SUT.check_missing_value(observation,
-                                                 SUT.archive_observations[observation]['name'],
+                result = SUT.check_missing_value(SUT.archive_observations[observation]['name'],
                                                  SUT.archive_observations[observation]['label'],
-                                                 SUT.archive_observations[observation]['missing'])
+                                                 SUT.archive_observations[observation]['missing'],
+                                                 None)
 
                 self.assertIsNone(result)
                 # self.assertIn(observation, SUT.missing_observations)
@@ -200,10 +200,10 @@ class TestObservationMissing(unittest.TestCase):
                 # Setting to ensure that count threshold has been met.
                 SUT.archive_observations[observation]['missing']['counter'] = count - 1
 
-                result = SUT.check_missing_value(observation,
-                                                 SUT.archive_observations[observation]['name'],
+                result = SUT.check_missing_value(SUT.archive_observations[observation]['name'],
                                                  SUT.archive_observations[observation]['label'],
-                                                 SUT.archive_observations[observation]['missing'])
+                                                 SUT.archive_observations[observation]['missing'],
+                                                 None)
 
                 self.assertIsNone(result)
 
@@ -226,8 +226,7 @@ class TestObservationReturned(unittest.TestCase):
 
             SUT.missing_observations = {}
 
-            result = SUT.check_value_returned(observation,
-                                              name,
+            result = SUT.check_value_returned(name,
                                               label,
                                               SUT.archive_observations[observation]['missing'],
                                               value)
@@ -257,8 +256,7 @@ class TestObservationReturned(unittest.TestCase):
                 }
             }
 
-            result = SUT.check_value_returned(observation,
-                                              name,
+            result = SUT.check_value_returned(name,
                                               label,
                                               SUT.archive_observations[observation]['missing'],
                                               value)
@@ -306,8 +304,7 @@ class TestObservationReturned(unittest.TestCase):
             SUT.archive_observations[observation]['missing']['threshold_passed']['notification_count'] = notification_count
             SUT.archive_observations[observation]['missing']['threshold_passed']['timestamp'] = now
 
-            result = SUT.check_value_returned(observation,
-                                              name,
+            result = SUT.check_value_returned(name,
                                               label,
                                               SUT.archive_observations[observation]['missing'],
                                               value)
@@ -338,8 +335,7 @@ class TestObservationReturned(unittest.TestCase):
                 }
             }
 
-            result = SUT.check_value_returned(observation,
-                                              name,
+            result = SUT.check_value_returned(name,
                                               label,
                                               SUT.archive_observations[observation]['missing'],
                                               value)

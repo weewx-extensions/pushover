@@ -221,6 +221,7 @@ class Notify(StdService):
                     observation[value_type]['value'] = int(config[value_type]['value'])
                 else:
                     observation['returned'] = {}
+                    observation[value_type]['value'] = None
                 observation[value_type]['count'] = int(config[value_type].get('count', count))
                 observation[value_type]['wait_time'] = to_int(config[value_type].get('wait_time', wait_time))
                 observation[value_type]['return_notification'] = to_bool(config[value_type].get('return_notification',
@@ -315,22 +316,22 @@ class Notify(StdService):
         return result
 
     # ToDo: replace with check_within
-    def check_missing_value(self, observation, name, label, observation_detail):
+    def check_missing_value(self, name, label, observation_detail):
         ''' Check if a notification should be sent for a missing value.'''
         self.logger.logdbg(self.name, f"  Processing missing for {name}{label}")
         now = int(time.time())
         result2 = {
             'threshold_type': 'missing',
-            'threshold_value': None,
+            'threshold_value': observation_detail['value'],
             'name': name,
             'label': label,
             'current_value': None,
         }
         time_delta = now - observation_detail['last_sent_timestamp']
         self.logger.logdbg(self.name, (f"    Time delta is {time_delta}, threshold is {observation_detail['wait_time']}, "
-                                       f"and last sent is {observation_detail['last_sent_timestamp']} for {observation}{label}"))
+                                       f"and last sent is {observation_detail['last_sent_timestamp']} for {name}{label}"))
         self.logger.logdbg(self.name, (f"    Running count is {observation_detail['counter']} and "
-                                       f"threshold is {observation_detail['count']} for {observation}{label}"))
+                                       f"threshold is {observation_detail['count']} for {name}{label}"))
 
         if observation_detail['counter'] == 0:
             observation_detail['threshold_passed'] = {}
@@ -348,7 +349,7 @@ class Notify(StdService):
         return None
 
     # ToDo: replace with checkoutside
-    def check_value_returned(self, observation, name, label, observation_detail, value):
+    def check_value_returned(self, zz, name, label, observation_detail, value):
         ''' Check if a notification should be sent when a missing value has returned. '''
         # ToDo: I think this needs work - think it is closer
         notification_type = 'missing'
@@ -357,16 +358,16 @@ class Notify(StdService):
         now = int(time.time())
         result2 = {
             'threshold_type': 'missing',
-            'threshold_value': None,
+            'threshold_value': observation_detail['value'],
             'name': name,
             'label': label,
             'current_value': value,
         }
         time_delta = now - observation_detail['last_sent_timestamp']
         self.logger.logdbg(self.name, (f"    Time delta is {time_delta} threshold is {observation_detail['wait_time']}, "
-                                       f"and last sent is {observation_detail['last_sent_timestamp']} for {observation}{label}"))
+                                       f"and last sent is {observation_detail['last_sent_timestamp']} for {name}{label}"))
         self.logger.logdbg(self.name, (f"    Running count is {observation_detail['counter']} and threshold is "
-                                       f"{observation_detail['count']} for {observation}{label}"))
+                                       f"{observation_detail['count']} for {name}{label}"))
 
         if observation_detail['counter'] > 0:
             if observation_detail['threshold_passed']['notification_count'] > 0:
@@ -388,12 +389,6 @@ class Notify(StdService):
             observation_detail['counter'] = 0
             # Setting to 1 is a hack, this allows the time threshold to be met
             # But does not short circuit checking the count threshold
-            observation_detail['last_sent_timestamp'] = 1
-
-        # Setting to 1 is a hack, this allows the time threshold to be met
-        # But does not short circuit checking the count threshold
-        # In otherwords, a value has been find since WeeWX started....
-        if observation_detail['last_sent_timestamp'] == 0:
             observation_detail['last_sent_timestamp'] = 1
 
         if result:
@@ -489,8 +484,7 @@ class Notify(StdService):
 
             detail_type = 'missing'
             if observation not in data and observation_detail.get('missing', None):
-                result = self.check_missing_value(observation,
-                                                  observation_detail['name'],
+                result = self.check_missing_value(observation_detail['name'],
                                                   observation_detail['label'],
                                                   observation_detail['missing'])
                 if result:
