@@ -315,86 +315,6 @@ class Notify(StdService):
 
         return result
 
-    # ToDo: replace with check_within
-    def check_missing_value(self, notification_type, name, label, observation_detail, value):
-        ''' Check if a notification should be sent for a missing value.'''
-        self.logger.logdbg(self.name, f"  Processing missing for {name}{label}")
-        now = int(time.time())
-        result2 = {
-            'threshold_type': notification_type,
-            'threshold_value': observation_detail['value'],
-            'name': name,
-            'label': label,
-            'current_value': value,
-        }
-        time_delta = now - observation_detail['last_sent_timestamp']
-        self.logger.logdbg(self.name, (f"    Time delta is {time_delta}, threshold is {observation_detail['wait_time']}, "
-                                       f"and last sent is {observation_detail['last_sent_timestamp']} for {name}{label}"))
-        self.logger.logdbg(self.name, (f"    Running count is {observation_detail['counter']} and "
-                                       f"threshold is {observation_detail['count']} for {name}{label}"))
-
-        if observation_detail['counter'] == 0:
-            observation_detail['threshold_passed'] = {}
-            observation_detail['threshold_passed']['timestamp'] = now
-            observation_detail['threshold_passed']['notification_count'] = 0
-
-        observation_detail['counter'] += 1
-        if time_delta >= observation_detail['wait_time']:
-            if observation_detail['counter'] >= observation_detail['count']:
-                observation_detail['threshold_passed']['notification_count'] += 1
-                result2['type'] = 'outside'
-                result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
-                result2['date_time'] = observation_detail['threshold_passed']['timestamp']
-                return namedtuple('Result', result2.keys())(**result2)
-        return None
-
-    # ToDo: replace with check_outside
-    def zz_check_value_returned(self, notification_type, name, label, observation_detail, value):
-        ''' Check if a notification should be sent when a missing value has returned. '''
-        # ToDo: I think this needs work - think it is closer
-        self.logger.logdbg(self.name, f"  Processing returned value for observation {name}{label}")
-        result = None
-        now = int(time.time())
-        result2 = {
-            'threshold_type': 'missing',
-            'threshold_value': observation_detail['value'],
-            'name': name,
-            'label': label,
-            'current_value': value,
-        }
-        time_delta = now - observation_detail['last_sent_timestamp']
-        self.logger.logdbg(self.name, (f"    Time delta is {time_delta} threshold is {observation_detail['wait_time']}, "
-                                       f"and last sent is {observation_detail['last_sent_timestamp']} for {name}{label}"))
-        self.logger.logdbg(self.name, (f"    Running count is {observation_detail['counter']} and threshold is "
-                                       f"{observation_detail['count']} for {name}{label}"))
-
-        if observation_detail['counter'] > 0:
-            if observation_detail['threshold_passed']['notification_count'] > 0:
-                if observation_detail['return_notification']:
-                    result2['type'] = 'within'
-                    result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
-                    result2['date_time'] = observation_detail['threshold_passed']['timestamp']
-                    result = result2
-                else:
-                    self.logger.logdbg(self.name, (f"    Notification not requested for {name}{label} "
-                                                   f"being outside {notification_type} at "
-                                                   f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} "
-                                                   f"and count of {observation_detail['counter']}."))
-            else:
-                self.logger.loginf(self.name, (f"No notifcations had been sent for {name}{label} outside {notification_type} at "
-                                               f"{format_timestamp(observation_detail['threshold_passed']['timestamp'])} and "
-                                               f"count of {observation_detail['counter']}."))
-
-            observation_detail['counter'] = 0
-            # Setting to 1 is a hack, this allows the time threshold to be met
-            # But does not short circuit checking the count threshold
-            observation_detail['last_sent_timestamp'] = 1
-
-        if result:
-            return namedtuple('Result', result.keys())(**result)
-
-        return result
-
     async def _process_data(self, data, observations):
         # log.debug("Processing record: %s", data)
         now = time.time()
@@ -483,11 +403,11 @@ class Notify(StdService):
 
             detail_type = 'missing'
             if observation not in data and observation_detail.get('missing', None):
-                result = self.check_missing_value('missing',
-                                                  observation_detail['name'],
-                                                  observation_detail['label'],
-                                                  observation_detail['missing'],
-                                                  None)
+                result = self.check_within('missing',
+                                           observation_detail['name'],
+                                           observation_detail['label'],
+                                           observation_detail['missing'],
+                                           None)
                 if result:
                     task_name = f"{observation}-{detail_type}-{now}"
                     task_names[task_name] = observation_detail[detail_type]
