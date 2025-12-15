@@ -13,10 +13,6 @@ After [installing](https://weewx.com/docs/5.0/utilities/weectl-extension/#instal
     # Default is True.
     enable = True
 
-    # The number of seconds to wait for the notification to be sent and processed.
-    # Default is None
-    notification_timeout = None
-
     # The name of the notification provider.
     # There must be a matching section within '[Notify]'.
     # The default is PushOver.
@@ -31,6 +27,10 @@ After [installing](https://weewx.com/docs/5.0/utilities/weectl-extension/#instal
         # Valid values: True or False
         # Default is True.
         send = True
+
+        # The number of seconds to wait for the notification to be sent and processed.
+        # Default is None
+        notification_timeout = None
 
         # Controls if notifications are written to the log.
         # Valid values: True or False

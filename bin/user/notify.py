@@ -15,10 +15,6 @@ Configuration:
     # Default is True.
     enable = True
 
-    # The number of seconds to wait for the notification to be sent and processed.
-    # Default is None
-    notification_timeout = None
-
     # The name of the notification provider.
     # There must be a matching section within '[Notify]'.
     # The default is PushOver.
@@ -33,6 +29,10 @@ Configuration:
         # Valid values: True or False
         # Default is True.
         send = True
+
+        # The number of seconds to wait for the notification to be sent and processed.
+        # Default is None
+        imeout = None
 
         # Controls if notifications are written to the log.
         # Valid values: True or False
@@ -158,8 +158,6 @@ class Notify(StdService):
         if not enable:
             self.logger.loginf(self.name, "Notify is not enabled, exiting")
             return
-
-        self.notification_timeout = to_int(service_dict.get('notification_timeout', None))
 
         notifier_name = service_dict.get('notifier', 'PushOver')
         notifier_dict = service_dict.get(notifier_name, None)
@@ -415,7 +413,7 @@ class Notify(StdService):
                     tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
         if tasks:
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=self.notification_timeout)
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=self.notifier.timeout)
             for task in done:
                 result = task.result()
                 task_name = task.get_name()
@@ -442,9 +440,15 @@ class Notify(StdService):
 
 class AbstractNotifier():
     ''' Abstract class for sending notifications.'''
-    def __init__(self, logger, _config_dict):
+    def __init__(self, logger, config_dict):
         self.name = self.__class__.__name__
         self.logger = logger
+        self._timeout = config_dict.get('timeout', None)
+
+    @property
+    def timeout(self):
+        ''' The time in seconds to wait for the notification processing to complete.'''
+        return self._timeout
 
     async def initialize(self):
         ''' Perform any final processing for this 'round'. '''
