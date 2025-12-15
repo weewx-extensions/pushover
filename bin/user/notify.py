@@ -485,23 +485,24 @@ class AbstractNotifier():
             },
         }
 
-        msg_missing_template = "{name}{label} missing at {date_time}, {notifications_sent} notifications sent.\n"
-
-        msg_returned_template = ("{name}{label} missing at {date_time} returned with value {current_value}, "
-                                 "{notifications_sent} notification sent.\n")
+        msg_missing_template = {
+            'outside': "{name}{label} missing at {date_time}, {notifications_sent} notifications sent.\n",
+            'within': ("{name}{label} missing at {date_time} returned with value {current_value}, "
+                       "{notifications_sent} notification sent.\n"),
+        }
 
         if msg_data.threshold_type == 'missing' and msg_data.type == 'outside':
-            return msg_missing_template.format(name=msg_data.name,
-                                               label=msg_data.label,
-                                               date_time=format_timestamp(msg_data.date_time),
-                                               notifications_sent=msg_data.notifications_sent)
+            return msg_missing_template[msg_data.type].format(name=msg_data.name,
+                                                              label=msg_data.label,
+                                                              date_time=format_timestamp(msg_data.date_time),
+                                                              notifications_sent=msg_data.notifications_sent)
 
         if msg_data.threshold_type == 'missing' and msg_data.type == 'within':
-            return msg_returned_template.format(name=msg_data.name,
-                                                label=msg_data.label,
-                                                date_time=format_timestamp(msg_data.date_time),
-                                                current_value=msg_data.current_value,
-                                                notifications_sent=msg_data.notifications_sent)
+            return msg_missing_template[msg_data.type].format(name=msg_data.name,
+                                                              label=msg_data.label,
+                                                              date_time=format_timestamp(msg_data.date_time),
+                                                              current_value=msg_data.current_value,
+                                                              notifications_sent=msg_data.notifications_sent)
 
         return msg_template[msg_data.threshold_type][msg_data.type].format(date_time=format_timestamp(msg_data.date_time),
                                                                            name=msg_data.name,
