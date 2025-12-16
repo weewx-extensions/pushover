@@ -239,8 +239,8 @@ class Notify(StdService):
             if observation in data and data[observation] is not None:
                 self.logger.logdbg(self.name, f"Processing observation: {observation}{observation_detail['label']}")
                 detail_type = 'missing'
-                if observation_detail.get('missing', None):
-                    result = self.check_within('missing',
+                if observation_detail.get(detail_type, None):
+                    result = self.check_within(detail_type,
                                                observation_detail['name'],
                                                observation_detail['label'],
                                                observation_detail[detail_type],
@@ -253,15 +253,15 @@ class Notify(StdService):
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'min'
-                if observation_detail.get('min', None):
+                if observation_detail.get(detail_type, None):
                     if data[observation] < observation_detail[detail_type]['value']:
-                        result = self.check_outside('min',
+                        result = self.check_outside(detail_type,
                                                     observation_detail['name'],
                                                     observation_detail['label'],
                                                     observation_detail[detail_type],
                                                     data[observation])
                     else:
-                        result = self.check_within('min',
+                        result = self.check_within(detail_type,
                                                    observation_detail['name'],
                                                    observation_detail['label'],
                                                    observation_detail[detail_type],
@@ -273,15 +273,15 @@ class Notify(StdService):
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'max'
-                if observation_detail.get('max', None):
+                if observation_detail.get(detail_type, None):
                     if data[observation] > observation_detail[detail_type]['value']:
-                        result = self.check_outside('max',
+                        result = self.check_outside(detail_type,
                                                     observation_detail['name'],
                                                     observation_detail['label'],
                                                     observation_detail[detail_type],
                                                     data[observation])
                     else:
-                        result = self.check_within('max',
+                        result = self.check_within(detail_type,
                                                    observation_detail['name'],
                                                    observation_detail['label'],
                                                    observation_detail[detail_type],
@@ -293,15 +293,15 @@ class Notify(StdService):
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
                 detail_type = 'equal'
-                if observation_detail.get('equal', None):
+                if observation_detail.get(detail_type, None):
                     if data[observation] != observation_detail[detail_type]['value']:
-                        result = self.check_outside('equal',
+                        result = self.check_outside(detail_type,
                                                     observation_detail['name'],
                                                     observation_detail['label'],
                                                     observation_detail[detail_type],
                                                     data[observation])
                     else:
-                        result = self.check_within('equal',
+                        result = self.check_within(detail_type,
                                                    observation_detail['name'],
                                                    observation_detail['label'],
                                                    observation_detail[detail_type],
@@ -313,8 +313,8 @@ class Notify(StdService):
                         tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
             detail_type = 'missing'
-            if observation not in data and observation_detail.get('missing', None):
-                result = self.check_outside('missing',
+            if observation not in data and observation_detail.get(detail_type, None):
+                result = self.check_outside(detail_type,
                                             observation_detail['name'],
                                             observation_detail['label'],
                                             observation_detail['missing'],
