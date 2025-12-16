@@ -238,79 +238,32 @@ class Notify(StdService):
 
             if observation in data and data[observation] is not None:
                 self.logger.logdbg(self.name, f"Processing observation: {observation}{observation_detail['label']}")
-                detail_type = 'missing'
-                if observation_detail.get(detail_type, None):
-                    result = self.check_within(detail_type,
-                                               observation_detail['name'],
-                                               observation_detail['label'],
-                                               observation_detail[detail_type],
-                                               data[observation])
-                    if result:
-                        # This is when a missing value has returned
-                        # Therefore, do not reset sent timestamp
-                        task_name = f"{observation}-{detail_type}-{now}"
-                        self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and not recorded.")
-                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
+                detail_types = ['missing', 'min', 'max', 'equal']
+                for detail_type in detail_types:
+                    if observation_detail.get(detail_type, None):
+                        if (detail_type == 'missing') or\
+                           (detail_type == 'min' and data[observation] >= observation_detail[detail_type]['value']) or \
+                           (detail_type == 'max' and data[observation] <= observation_detail[detail_type]['value']) or \
+                           (detail_type == 'equal' and data[observation] == observation_detail[detail_type]['value']):
+                            result = self.check_within(detail_type,
+                                                       observation_detail['name'],
+                                                       observation_detail['label'],
+                                                       observation_detail[detail_type],
+                                                       data[observation])
+                        else:
+                            result = self.check_outside(detail_type,
+                                                        observation_detail['name'],
+                                                        observation_detail['label'],
+                                                        observation_detail[detail_type],
+                                                        data[observation])
 
-                detail_type = 'min'
-                if observation_detail.get(detail_type, None):
-                    if data[observation] < observation_detail[detail_type]['value']:
-                        result = self.check_outside(detail_type,
-                                                    observation_detail['name'],
-                                                    observation_detail['label'],
-                                                    observation_detail[detail_type],
-                                                    data[observation])
-                    else:
-                        result = self.check_within(detail_type,
-                                                   observation_detail['name'],
-                                                   observation_detail['label'],
-                                                   observation_detail[detail_type],
-                                                   data[observation])
-                    if result:
-                        task_name = f"{observation}-{detail_type}-{now}"
-                        task_names[task_name] = observation_detail[detail_type]
-                        self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
-                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
-
-                detail_type = 'max'
-                if observation_detail.get(detail_type, None):
-                    if data[observation] > observation_detail[detail_type]['value']:
-                        result = self.check_outside(detail_type,
-                                                    observation_detail['name'],
-                                                    observation_detail['label'],
-                                                    observation_detail[detail_type],
-                                                    data[observation])
-                    else:
-                        result = self.check_within(detail_type,
-                                                   observation_detail['name'],
-                                                   observation_detail['label'],
-                                                   observation_detail[detail_type],
-                                                   data[observation])
-                    if result:
-                        task_name = f"{observation}-{detail_type}-{now}"
-                        task_names[task_name] = observation_detail[detail_type]
-                        self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
-                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
-
-                detail_type = 'equal'
-                if observation_detail.get(detail_type, None):
-                    if data[observation] != observation_detail[detail_type]['value']:
-                        result = self.check_outside(detail_type,
-                                                    observation_detail['name'],
-                                                    observation_detail['label'],
-                                                    observation_detail[detail_type],
-                                                    data[observation])
-                    else:
-                        result = self.check_within(detail_type,
-                                                   observation_detail['name'],
-                                                   observation_detail['label'],
-                                                   observation_detail[detail_type],
-                                                   data[observation])
-                    if result:
-                        task_name = f"{observation}-{detail_type}-{now}"
-                        task_names[task_name] = observation_detail[detail_type]
-                        self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
-                        tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
+                        if result:
+                            task_name = f"{observation}-{detail_type}-{now}"
+                            # If missing has returned, do reset sent timestamp
+                            if detail_type != 'missing':
+                                task_names[task_name] = observation_detail[detail_type]
+                            self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
+                            tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
             detail_type = 'missing'
             if observation not in data and observation_detail.get(detail_type, None):
