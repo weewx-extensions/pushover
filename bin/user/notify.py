@@ -216,9 +216,6 @@ class Notify(StdService):
                                                f"count of {observation_detail['counter']}."))
 
             observation_detail['counter'] = 0
-            # Setting to 1 is a hack, this allows the time threshold to be met
-            # But does not short circuit checking the count threshold
-            observation_detail['last_sent_timestamp'] = 1
 
         if result:
             return namedtuple('Result', result.keys())(**result)
