@@ -102,8 +102,6 @@ class TestObservationMissing(unittest.TestCase):
                 expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
 
             self.assertEqual(result, expected_result)
-            # self.assertIn(observation, SUT.missing_observations)
-            # self.assertIn('missing_time', SUT.missing_observations[observation])
 
     def test_past_time_threshold_past_count_threshold(self):
         mock_engine = mock.Mock()
@@ -151,8 +149,6 @@ class TestObservationMissing(unittest.TestCase):
                 print(result)
                 print(expected_result)
                 self.assertEqual(result, expected_result)
-                # self.assertIn(observation, SUT.missing_observations)
-                # self.assertIn('missing_time', SUT.missing_observations[observation])
 
     def test_past_time_threshold(self):
         mock_engine = mock.Mock()
@@ -182,7 +178,6 @@ class TestObservationMissing(unittest.TestCase):
                                           None)
 
                 self.assertIsNone(result)
-                # self.assertIn(observation, SUT.missing_observations)
 
     def test_past_count_threshold(self):
         mock_engine = mock.Mock()
