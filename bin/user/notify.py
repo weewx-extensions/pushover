@@ -187,7 +187,6 @@ class Notify(StdService):
         ''' Check if an observation is not equal to desired value.
             Send a notification if time and cound thresholds have been met. '''
         result = None
-        now = int(time.time())
         result2 = {
             'threshold_type': notification_type,
             'threshold_value': observation_detail['value'],
@@ -196,9 +195,6 @@ class Notify(StdService):
             'current_value': value,
         }
         self.logger.logdbg(self.name, f"  {notification_type} check {value} to {observation_detail['value']} for {name}{label}")
-        time_delta = abs(now - observation_detail['last_sent_timestamp'])
-        self.logger.logdbg(self.name, (f"    Time delta {notification_type} is {time_delta} and threshold is "
-                                       f"{observation_detail['wait_time']} for {name}{label}"))
         self.logger.logdbg(self.name, (f"    Running count {notification_type} is {observation_detail['counter']} and "
                                        f"threshold is {observation_detail['count']} for {name}{label}"))
 
