@@ -142,6 +142,7 @@ class Notify(StdService):
                                                                                                 return_notification))
                 observation[value_type]['last_sent_timestamp'] = 0
                 observation[value_type]['counter'] = 0
+                observation[value_type]['first_check'] = True
 
         return observation
 
@@ -171,12 +172,15 @@ class Notify(StdService):
 
         observation_detail['counter'] += 1
         if time_delta >= observation_detail['wait_time']:
-            if observation_detail['counter'] >= observation_detail['count']:
+            if observation_detail['counter'] >= observation_detail['count'] or observation_detail['first_check']:
                 observation_detail['threshold_passed']['notification_count'] += 1
                 result2['type'] = 'outside'
                 result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
                 result2['date_time'] = observation_detail['threshold_passed']['timestamp']
+                result2['first_check'] = observation_detail['first_check']
                 result = result2
+
+        observation_detail['first_check'] = False
 
         if result:
             return namedtuple('Result', result.keys())(**result)
