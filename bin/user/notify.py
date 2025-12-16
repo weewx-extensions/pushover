@@ -145,7 +145,7 @@ class Notify(StdService):
 
         return observation
 
-    def check_within(self, notification_type, name, label, observation_detail, value):
+    def check_outside(self, notification_type, name, label, observation_detail, value):
         ''' Check if an observation is less than a desired value.
             Send a notification if time and cound thresholds have been met. '''
         result = None
@@ -183,7 +183,7 @@ class Notify(StdService):
 
         return result
 
-    def check_outside(self, notification_type, name, label, observation_detail, value):
+    def check_within(self, notification_type, name, label, observation_detail, value):
         ''' Check if an observation is not equal to desired value.
             Send a notification if time and cound thresholds have been met. '''
         result = None
@@ -239,11 +239,11 @@ class Notify(StdService):
                 self.logger.logdbg(self.name, f"Processing observation: {observation}{observation_detail['label']}")
                 detail_type = 'missing'
                 if observation_detail.get('missing', None):
-                    result = self.check_outside('missing',
-                                                observation_detail['name'],
-                                                observation_detail['label'],
-                                                observation_detail[detail_type],
-                                                data[observation])
+                    result = self.check_within('missing',
+                                               observation_detail['name'],
+                                               observation_detail['label'],
+                                               observation_detail[detail_type],
+                                               data[observation])
                     if result:
                         # This is when a missing value has returned
                         # Therefore, do not reset sent timestamp
@@ -254,17 +254,17 @@ class Notify(StdService):
                 detail_type = 'min'
                 if observation_detail.get('min', None):
                     if data[observation] < observation_detail[detail_type]['value']:
-                        result = self.check_within('min',
-                                                   observation_detail['name'],
-                                                   observation_detail['label'],
-                                                   observation_detail[detail_type],
-                                                   data[observation])
-                    else:
                         result = self.check_outside('min',
                                                     observation_detail['name'],
                                                     observation_detail['label'],
                                                     observation_detail[detail_type],
                                                     data[observation])
+                    else:
+                        result = self.check_within('min',
+                                                   observation_detail['name'],
+                                                   observation_detail['label'],
+                                                   observation_detail[detail_type],
+                                                   data[observation])
                     if result:
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
@@ -274,17 +274,17 @@ class Notify(StdService):
                 detail_type = 'max'
                 if observation_detail.get('max', None):
                     if data[observation] > observation_detail[detail_type]['value']:
-                        result = self.check_within('max',
-                                                   observation_detail['name'],
-                                                   observation_detail['label'],
-                                                   observation_detail[detail_type],
-                                                   data[observation])
-                    else:
                         result = self.check_outside('max',
                                                     observation_detail['name'],
                                                     observation_detail['label'],
                                                     observation_detail[detail_type],
                                                     data[observation])
+                    else:
+                        result = self.check_within('max',
+                                                   observation_detail['name'],
+                                                   observation_detail['label'],
+                                                   observation_detail[detail_type],
+                                                   data[observation])
                     if result:
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
@@ -294,17 +294,17 @@ class Notify(StdService):
                 detail_type = 'equal'
                 if observation_detail.get('equal', None):
                     if data[observation] != observation_detail[detail_type]['value']:
-                        result = self.check_within('equal',
-                                                   observation_detail['name'],
-                                                   observation_detail['label'],
-                                                   observation_detail[detail_type],
-                                                   data[observation])
-                    else:
                         result = self.check_outside('equal',
                                                     observation_detail['name'],
                                                     observation_detail['label'],
                                                     observation_detail[detail_type],
                                                     data[observation])
+                    else:
+                        result = self.check_within('equal',
+                                                   observation_detail['name'],
+                                                   observation_detail['label'],
+                                                   observation_detail[detail_type],
+                                                   data[observation])
                     if result:
                         task_name = f"{observation}-{detail_type}-{now}"
                         task_names[task_name] = observation_detail[detail_type]
@@ -313,11 +313,11 @@ class Notify(StdService):
 
             detail_type = 'missing'
             if observation not in data and observation_detail.get('missing', None):
-                result = self.check_within('missing',
-                                           observation_detail['name'],
-                                           observation_detail['label'],
-                                           observation_detail['missing'],
-                                           None)
+                result = self.check_outside('missing',
+                                            observation_detail['name'],
+                                            observation_detail['label'],
+                                            observation_detail['missing'],
+                                            None)
                 if result:
                     task_name = f"{observation}-{detail_type}-{now}"
                     task_names[task_name] = observation_detail[detail_type]
