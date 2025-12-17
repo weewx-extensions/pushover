@@ -6,6 +6,7 @@
 
 # pylint: disable=wrong-import-order
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
+# pylint: disable=protected-access
 
 import unittest
 import mock
@@ -64,6 +65,53 @@ def setup_config_dict(binding,
 class MockClass():
     def __init__(self, _arg1, _arg2):
         pass
+
+    @property
+    def timeout(self):
+        return random.randint(1, 100)
+
+    def initialize(self):
+        pass
+
+    def send_notification(self, _arg1):
+        pass
+
+    async def finalize(self):
+        pass
+
+class TestNotify(unittest.IsolatedAsyncioTestCase):
+    async def test_process_data(self):
+        mock_engine = mock.Mock()
+
+        threshold_type = 'min'
+        observation = random_string()
+        value = random.random()
+        label = random_string()
+        data = {
+            observation: value,
+        }
+
+        config_dict = setup_config_dict('archive', observation, threshold_type, label, value=value - 1)
+        config = configobj.ConfigObj(config_dict)
+
+        with mock.patch('asyncio.create_task'):
+            with mock.patch('asyncio.wait') as mock_wait:
+                with mock.patch('user.notify.Logger', spec=Logger):
+                    with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                        with mock.patch.object(Notify, 'check_within'):
+                            with mock.patch.object(Notify, 'check_outside'):
+                                with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                    with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                mock_wait.return_value = ([], [])
+                                                mock_weeutil.get_object.return_value = MockClass
+
+                                                SUT = Notify(mock_engine, config)
+
+                                                await SUT._process_data(False, data, SUT.archive_observations)
+
+        print("done")
 
 class TestObservationMissing(unittest.TestCase):
     threshold_type = 'missing'
