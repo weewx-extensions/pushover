@@ -104,14 +104,12 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
                                     with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
                                         with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                             with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
-                                                mock_wait.return_value = ([], [])
+                                                mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
                                                 mock_weeutil.get_object.return_value = MockClass
 
                                                 SUT = Notify(mock_engine, config)
 
                                                 await SUT._process_data(False, data, SUT.archive_observations)
-
-        print("done")
 
 class TestObservationMissing(unittest.TestCase):
     threshold_type = 'missing'
