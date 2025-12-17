@@ -24,14 +24,10 @@ Configuration:
     [[PushOver]]
 '''
 
-import argparse
 import asyncio
 import logging
-import os
 import time
 from collections import namedtuple
-
-import configobj
 
 import weewx
 from weewx.engine import StdService
