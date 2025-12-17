@@ -91,6 +91,7 @@ class Notify(StdService):
 
         self.loop_observations = {}
         if 'loop' in service_dict:
+            self.loop_first_check = True
             default_loop_wait_time = to_int(service_dict['loop'].get('wait_time', wait_time))
             default_loop_return_notification = to_bool(service_dict['loop'].get('return_notification', return_notification))
             for observation in service_dict['loop']:
@@ -103,6 +104,7 @@ class Notify(StdService):
 
         self.archive_observations = {}
         if 'archive' in service_dict:
+            self.archive_first_check = True
             default_archive_wait_time = to_int(service_dict['archive'].get('wait_time', wait_time))
             default_archive_return_notification = to_bool(service_dict['archive'].get('return_notification', return_notification))
             for observation in service_dict['archive']:
@@ -142,11 +144,10 @@ class Notify(StdService):
                                                                                                 return_notification))
                 observation[value_type]['last_sent_timestamp'] = 0
                 observation[value_type]['counter'] = 0
-                observation[value_type]['first_check'] = True
 
         return observation
 
-    def check_outside(self, notification_type, name, label, observation_detail, value):
+    def check_outside(self, first_check, notification_type, name, label, observation_detail, value):
         ''' Check if an observation is less than a desired value.
             Send a notification if time and cound thresholds have been met. '''
         result = None
@@ -172,15 +173,13 @@ class Notify(StdService):
 
         observation_detail['counter'] += 1
         if time_delta >= observation_detail['wait_time']:
-            if observation_detail['counter'] >= observation_detail['count'] or observation_detail['first_check']:
+            if observation_detail['counter'] >= observation_detail['count'] or first_check:
                 observation_detail['threshold_passed']['notification_count'] += 1
                 result2['type'] = 'outside'
                 result2['notifications_sent'] = observation_detail['threshold_passed']['notification_count']
                 result2['date_time'] = observation_detail['threshold_passed']['timestamp']
-                result2['first_check'] = observation_detail['first_check']
+                result2['first_check'] = first_check
                 result = result2
-
-        observation_detail['first_check'] = False
 
         if result:
             return namedtuple('Result', result.keys())(**result)
@@ -226,7 +225,7 @@ class Notify(StdService):
 
         return result
 
-    async def _process_data(self, data, observations):
+    async def _process_data(self, first_check, data, observations):
         # log.debug("Processing record: %s", data)
         now = time.time()
         tasks = []
@@ -251,7 +250,8 @@ class Notify(StdService):
                                                        observation_detail[detail_type],
                                                        data[observation])
                         else:
-                            result = self.check_outside(detail_type,
+                            result = self.check_outside(first_check,
+                                                        detail_type,
                                                         observation_detail['name'],
                                                         observation_detail['label'],
                                                         observation_detail[detail_type],
@@ -267,7 +267,8 @@ class Notify(StdService):
 
             detail_type = 'missing'
             if observation not in data and observation_detail.get(detail_type, None):
-                result = self.check_outside(detail_type,
+                result = self.check_outside(first_check,
+                                            detail_type,
                                             observation_detail['name'],
                                             observation_detail['label'],
                                             observation_detail['missing'],
@@ -297,12 +298,14 @@ class Notify(StdService):
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
         if not self.notifier.throttle_notification():
-            asyncio.run(self._process_data(event.record, self.archive_observations))
+            asyncio.run(self._process_data(self.archive_first_check, event.record, self.archive_observations))
+        self.archive_first_check = False
 
     def new_loop_packet(self, event):
         """ Handle the new loop packet event. """
         if not self.notifier.throttle_notification():
-            asyncio.run(self._process_data(event.packet, self.loop_observations))
+            asyncio.run(self._process_data(self.loop_first_check, event.packet, self.loop_observations))
+        self.loop_first_check = False
 
 class AbstractNotifier():
     ''' Abstract class for sending notifications.'''
