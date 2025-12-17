@@ -391,56 +391,7 @@ class AbstractNotifier():
 
 def main():  # pragma no cover
     """ The main routine. """
-    min_config_dict = {
-        'Station': {
-            'altitude': [0, 'foot'],
-            'latitude': 0,
-            'station_type': 'Simulator',
-            'longitude': 0
-        },
-        'Simulator': {
-            'driver': 'weewx.drivers.simulator',
-        },
-        'Engine': {
-            'Services': {}
-        }
-    }
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--conf",
-                        required=True,
-                        help="The WeeWX configuration file. Typically weewx.conf.")
-    options = parser.parse_args()
-
-    config_path = os.path.abspath(options.conf)
-    config_dict = configobj.ConfigObj(config_path, file_error=True)
-
-    engine = weewx.engine.DummyEngine(min_config_dict)
-
-    packet = {'dateTime': int(time.time()),
-              'mon_extraTemp6': 6,
-              }
-
-    # ToDo: Make enable an option
-    config_dict['Notify']['enable'] = True
-
-    notify = Notify(engine, config_dict)
-
-    event = weewx.Event(weewx.NEW_LOOP_PACKET, packet=packet)
-
-    notify.new_loop_packet(event)
-
-    event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
-    notify.new_archive_record(event)
-
-    packet = {'dateTime': int(time.time()),
-              'mon_extraTemp6': 6,
-              'mon_extraTemp1': 1,
-              }
-    event = weewx.Event(weewx.NEW_ARCHIVE_RECORD, record=packet)
-    notify.new_archive_record(event)
-
-    notify.shutDown()
+    print("ERROR: Running this extension from the command line is not supported.")
 
 if __name__ == '__main__':
     main()
