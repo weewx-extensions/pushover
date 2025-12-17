@@ -240,7 +240,7 @@ class Notify(StdService):
                 detail_types = ['missing', 'min', 'max', 'equal']
                 for detail_type in detail_types:
                     if observation_detail.get(detail_type, None):
-                        if (detail_type == 'missing') or\
+                        if (detail_type == 'missing') or \
                            (detail_type == 'min' and data[observation] >= observation_detail[detail_type]['value']) or \
                            (detail_type == 'max' and data[observation] <= observation_detail[detail_type]['value']) or \
                            (detail_type == 'equal' and data[observation] == observation_detail[detail_type]['value']):
