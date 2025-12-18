@@ -82,6 +82,7 @@ class MockClass():
 class TestNotify(unittest.IsolatedAsyncioTestCase):
     async def test_process_data(self):
         mock_engine = mock.Mock()
+        now = time.time()
 
         threshold_type = 'min'
         observation = random_string()
@@ -94,22 +95,61 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
         config_dict = setup_config_dict('archive', observation, threshold_type, label, value=value - 1)
         config = configobj.ConfigObj(config_dict)
 
-        with mock.patch('asyncio.create_task'):
-            with mock.patch('asyncio.wait') as mock_wait:
-                with mock.patch('user.notify.Logger', spec=Logger):
-                    with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
-                        with mock.patch.object(Notify, 'check_within'):
-                            with mock.patch.object(Notify, 'check_outside'):
-                                with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                    with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
-                                            with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
-                                                mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
-                                                mock_weeutil.get_object.return_value = MockClass
 
-                                                SUT = Notify(mock_engine, config)
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task'):
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within'):
+                                with mock.patch.object(Notify, 'check_outside'):
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
 
-                                                await SUT._process_data(False, data, SUT.archive_observations)
+                                                    SUT = Notify(mock_engine, config)
+
+                                                    await SUT._process_data(False, data, SUT.archive_observations)
+
+    async def test_process_data_min_within(self):
+        pass
+
+    async def test_process_data_min_outside(self):
+        pass
+
+    async def test_process_data_max_within(self):
+        pass
+
+    async def test_process_data_max_outside(self):
+        pass
+
+    async def test_process_data_equal_within(self):
+        pass
+
+    async def test_process_data_equal_outside(self):
+        pass
+
+    async def test_process_data_observation_returns(self):
+        pass
+
+    async def test_process_data_observation_gone_missing(self):
+        pass
+
+    async def test_process_data_observation_gone_missing_succeeds(self):
+        pass
+
+    async def test_process_data_within_succeeds(self):
+        pass
+
+    def test_process_data_outside_succeeds(self):
+        pass
+
+    async def test_process_data_observeraion_is_none(self):
+        pass
 
 class TestObservationMissing(unittest.TestCase):
     threshold_type = 'missing'
