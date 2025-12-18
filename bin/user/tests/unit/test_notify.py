@@ -95,7 +95,6 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
         config_dict = setup_config_dict('archive', observation, threshold_type, label, value=value - 1)
         config = configobj.ConfigObj(config_dict)
 
-
         with mock.patch('user.notify.time') as mock_time:
             with mock.patch('asyncio.create_task'):
                 with mock.patch('asyncio.wait') as mock_wait:
@@ -149,6 +148,33 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
         pass
 
     async def test_process_data_observeraion_is_none(self):
+        pass
+
+    async def check_within_threshold_did_not_leave(self):
+        pass
+
+    async def check_within_threshold_no_notifications_sent(self):
+        pass
+
+    async def check_within_threshold_return_notification_not_configured(self):
+        pass
+
+    async def check_within_threshold_notification_sent(self):
+        pass
+
+    async def check_outside_threshold_on_first_leaving(self):
+        pass
+
+    async def check_outside_threshold_wait_time_not_met(self):
+        pass
+
+    async def check_outside_threshold_first_time_checking(self):
+        pass
+
+    async def check_outside_threshold_count_not_met(self):
+        pass
+
+    async def check_outside_threshold(self):
         pass
 
 class TestObservationMissing(unittest.TestCase):
