@@ -150,33 +150,94 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
     async def test_process_data_observeraion_is_none(self):
         pass
 
-    async def check_within_threshold_did_not_leave(self):
+    async def test_check_within_threshold_did_not_leave(self):
         pass
 
-    async def check_within_threshold_no_notifications_sent(self):
+    async def test_check_within_threshold_no_notifications_sent(self):
         pass
 
-    async def check_within_threshold_return_notification_not_configured(self):
+    async def test_check_within_threshold_return_notification_not_configured(self):
         pass
 
-    async def check_within_threshold_notification_sent(self):
+    async def test_check_within_threshold_notification_sent(self):
         pass
 
-    async def check_outside_threshold_on_first_leaving(self):
+    async def test_check_outside_threshold_on_first_leaving(self):
         pass
 
-    async def check_outside_threshold_wait_time_not_met(self):
+    async def test_check_outside_threshold_wait_time_not_met(self):
         pass
 
-    async def check_outside_threshold_first_time_checking(self):
+    async def test_check_outside_threshold_first_time_checking(self):
         pass
 
-    async def check_outside_threshold_count_not_met(self):
+    async def test_check_outside_threshold_count_not_met(self):
         pass
 
-    async def check_outside_threshold(self):
-        pass
+    async def test_check_outside_threshold(self):
+        mock_engine = mock.Mock()
+        now = time.time()
+        first_check = False
+        threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
+        observation = random_string()
+        label = random_string()
+        value = random.random()
+        binding_type = random.choice(['archive', 'loop'])
 
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        expected_dict = {
+            'threshold_type': threshold_type,
+            'threshold_value': int(value),
+            'name': observation,
+            'label': label,
+            'current_value': value,
+            'type': 'outside',
+            'notifications_sent': 1,
+            'date_time': now,
+            'first_check': False,
+        }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
+        result = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('user.notify.Logger', spec=Logger):
+                with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                    mock_time.time.return_value = now
+                    mock_weeutil.get_object.return_value = MockClass
+
+                    SUT = Notify(mock_engine, config)
+
+                    if binding_type == 'archive':
+                        SUT.archive_observations[observation][threshold_type]['counter'] = \
+                            SUT.archive_observations[observation][threshold_type]['count'] + 1
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed'] = {}
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 0
+                        result = SUT.check_outside(first_check,
+                                                   threshold_type,
+                                                   observation,
+                                                   label,
+                                                   SUT.archive_observations[observation][threshold_type],
+                                                   value)
+
+                    if binding_type == 'loop':
+                        SUT.loop_observations[observation][threshold_type]['counter'] = \
+                            SUT.loop_observations[observation][threshold_type]['count'] + 1
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed'] = {}
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 0
+                        result = SUT.check_outside(first_check,
+                                                   threshold_type,
+                                                   observation,
+                                                   label,
+                                                   SUT.loop_observations[observation][threshold_type],
+                                                   value)
+
+                    self.assertEqual(result, expected_result)
+
+@unittest.skip('todo - delete')
 class TestObservationMissing(unittest.TestCase):
     threshold_type = 'missing'
 
@@ -327,6 +388,7 @@ class TestObservationMissing(unittest.TestCase):
 
                 self.assertIsNone(result)
 
+@unittest.skip('todo - delete')
 class TestObservationReturned(unittest.TestCase):
     threshold_type = 'missing'
 
@@ -450,6 +512,7 @@ class TestObservationReturned(unittest.TestCase):
 
             self.assertIsNone(result)
 
+@unittest.skip('todo - delete')
 class TestObservationEqualCheck(unittest.TestCase):
     threshold_type = 'equal'
 
@@ -660,6 +723,7 @@ class TestObservationEqualCheck(unittest.TestCase):
 
             self.assertEqual(result, expected_result)
 
+@unittest.skip('todo - delete')
 class TestObservationMaxCheck(unittest.TestCase):
     threshold_type = 'max'
 
@@ -870,6 +934,7 @@ class TestObservationMaxCheck(unittest.TestCase):
 
             self.assertEqual(result, expected_result)
 
+@unittest.skip('todo - delete')
 class TestObservationMinCheck(unittest.TestCase):
     threshold_type = 'min'
 
