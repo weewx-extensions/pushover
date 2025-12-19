@@ -166,13 +166,162 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
         pass
 
     async def test_check_outside_threshold_wait_time_not_met(self):
-        pass
+        mock_engine = mock.Mock()
+        now = 0
+        first_check = False
+        threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
+        observation = random_string()
+        label = random_string()
+        value = random.random()
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        result = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('user.notify.Logger', spec=Logger):
+                with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                    mock_time.time.return_value = now
+                    mock_weeutil.get_object.return_value = MockClass
+
+                    SUT = Notify(mock_engine, config)
+
+                    if binding_type == 'archive':
+                        SUT.archive_observations[observation][threshold_type]['counter'] = \
+                            SUT.archive_observations[observation][threshold_type]['count'] + 1
+                        result = SUT.check_outside(first_check,
+                                                   threshold_type,
+                                                   observation,
+                                                   label,
+                                                   SUT.archive_observations[observation][threshold_type],
+                                                   value)
+
+                    if binding_type == 'loop':
+                        SUT.loop_observations[observation][threshold_type]['counter'] = \
+                            SUT.loop_observations[observation][threshold_type]['count'] + 1
+                        result = SUT.check_outside(first_check,
+                                                   threshold_type,
+                                                   observation,
+                                                   label,
+                                                   SUT.loop_observations[observation][threshold_type],
+                                                   value)
+
+                    self.assertIsNone(result)
 
     async def test_check_outside_threshold_first_time_checking(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+        first_check = True
+        threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
+        observation = random_string()
+        label = random_string()
+        value = random.random()
+        binding_type = random.choice(['archive', 'loop'])
+        if threshold_type == 'missing':
+            threshold_value = None
+        else:
+            threshold_value = int(value)
 
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        expected_dict = {
+            'threshold_type': threshold_type,
+            'threshold_value': threshold_value,
+            'name': observation,
+            'label': label,
+            'current_value': value,
+            'type': 'outside',
+            'notifications_sent': 1,
+            'date_time': int(now),
+            'first_check': True,
+        }
+        expected_result = namedtuple('ExpectedResukt', expected_dict.keys())(**expected_dict)
+        result = None
+        expected_dict = {
+            'timestamp': int(now),
+            'notification_count': 1,
+        }
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('user.notify.Logger', spec=Logger):
+                with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                    mock_time.time.return_value = now
+                    mock_weeutil.get_object.return_value = MockClass
+
+                    SUT = Notify(mock_engine, config)
+
+                    if binding_type == 'archive':
+                        SUT.archive_observations[observation][threshold_type]['counter'] = 0
+                        result = SUT.check_outside(first_check,
+                                                   threshold_type,
+                                                   observation,
+                                                   label,
+                                                   SUT.archive_observations[observation][threshold_type],
+                                                   value)
+
+                    if binding_type == 'loop':
+                        SUT.loop_observations[observation][threshold_type]['counter'] = 0
+                        result = SUT.check_outside(first_check,
+                                                   threshold_type,
+                                                   observation,
+                                                   label,
+                                                   SUT.loop_observations[observation][threshold_type],
+                                                   value)
+
+                    self.assertEqual(result, expected_result)
+                    if binding_type == 'archive':
+                        self.assertDictEqual(SUT.archive_observations[observation][threshold_type]['threshold_passed'], expected_dict)
+                    if binding_type == 'loop':
+                        self.assertDictEqual(SUT.loop_observations[observation][threshold_type]['threshold_passed'], expected_dict)
+
+    # todo - review
     async def test_check_outside_threshold_count_not_met(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+        first_check = False
+        threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
+        observation = random_string()
+        label = random_string()
+        value = random.random()
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        result = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('user.notify.Logger', spec=Logger):
+                with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                    mock_time.time.return_value = now
+                    mock_weeutil.get_object.return_value = MockClass
+
+                    SUT = Notify(mock_engine, config)
+
+                    if binding_type == 'archive':
+                        SUT.archive_observations[observation][threshold_type]['counter'] = \
+                            SUT.archive_observations[observation][threshold_type]['count'] - 3
+                        result = SUT.check_outside(first_check,
+                                                   threshold_type,
+                                                   observation,
+                                                   label,
+                                                   SUT.archive_observations[observation][threshold_type],
+                                                   value)
+
+                    if binding_type == 'loop':
+                        SUT.loop_observations[observation][threshold_type]['counter'] = \
+                            SUT.loop_observations[observation][threshold_type]['count'] - 3
+                        result = SUT.check_outside(first_check,
+                                                   threshold_type,
+                                                   observation,
+                                                   label,
+                                                   SUT.loop_observations[observation][threshold_type],
+                                                   value)
+
+                    self.assertIsNone(result)
 
     async def test_check_outside_threshold(self):
         mock_engine = mock.Mock()
