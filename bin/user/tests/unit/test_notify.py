@@ -151,15 +151,147 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
         pass
 
     async def test_check_within_threshold_did_not_leave(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+        threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
+        observation = random_string()
+        label = random_string()
+        value = random.random()
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        result = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('user.notify.Logger', spec=Logger):
+                with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                    mock_time.time.return_value = now
+                    mock_weeutil.get_object.return_value = MockClass
+
+                    SUT = Notify(mock_engine, config)
+
+                    if binding_type == 'archive':
+                        SUT.archive_observations[observation][threshold_type]['counter'] = 0
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed'] = {}
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 0
+                        result = SUT.check_within(threshold_type,
+                                                  observation,
+                                                  label,
+                                                  SUT.archive_observations[observation][threshold_type],
+                                                  value)
+
+                    if binding_type == 'loop':
+                        SUT.loop_observations[observation][threshold_type]['counter'] = 0
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed'] = {}
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 0
+                        result = SUT.check_within(threshold_type,
+                                                  observation,
+                                                  label,
+                                                  SUT.loop_observations[observation][threshold_type],
+                                                  value)
+
+                    self.assertIsNone(result)
 
     async def test_check_within_threshold_no_notifications_sent(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+        threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
+        observation = random_string()
+        label = random_string()
+        value = random.random()
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
+        config = configobj.ConfigObj(config_dict)
+
+        result = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('user.notify.Logger', spec=Logger):
+                with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                    mock_time.time.return_value = now
+                    mock_weeutil.get_object.return_value = MockClass
+
+                    SUT = Notify(mock_engine, config)
+
+                    if binding_type == 'archive':
+                        SUT.archive_observations[observation][threshold_type]['counter'] = \
+                            SUT.archive_observations[observation][threshold_type]['count'] + 1
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed'] = {}
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 0
+                        result = SUT.check_within(threshold_type,
+                                                  observation,
+                                                  label,
+                                                  SUT.archive_observations[observation][threshold_type],
+                                                  value)
+
+                    if binding_type == 'loop':
+                        SUT.loop_observations[observation][threshold_type]['counter'] = \
+                            SUT.loop_observations[observation][threshold_type]['count'] + 1
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed'] = {}
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 0
+                        result = SUT.check_within(threshold_type,
+                                                  observation,
+                                                  label,
+                                                  SUT.loop_observations[observation][threshold_type],
+                                                  value)
+
+                    self.assertIsNone(result)
 
     async def test_check_within_threshold_return_notification_not_configured(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+        threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
+        observation = random_string()
+        label = random_string()
+        value = random.random()
+        binding_type = random.choice(['archive', 'loop'])
 
-    # ToDo - review
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value, return_notification=False)
+        config = configobj.ConfigObj(config_dict)
+
+        result = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('user.notify.Logger', spec=Logger):
+                with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                    mock_time.time.return_value = now
+                    mock_weeutil.get_object.return_value = MockClass
+
+                    SUT = Notify(mock_engine, config)
+
+                    if binding_type == 'archive':
+                        SUT.archive_observations[observation][threshold_type]['counter'] = \
+                            SUT.archive_observations[observation][threshold_type]['count'] + 1
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed'] = {}
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 1
+                        result = SUT.check_within(threshold_type,
+                                                  observation,
+                                                  label,
+                                                  SUT.archive_observations[observation][threshold_type],
+                                                  value)
+
+                    if binding_type == 'loop':
+                        SUT.loop_observations[observation][threshold_type]['counter'] = \
+                            SUT.loop_observations[observation][threshold_type]['count'] + 1
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed'] = {}
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 1
+                        result = SUT.check_within(threshold_type,
+                                                  observation,
+                                                  label,
+                                                  SUT.loop_observations[observation][threshold_type],
+                                                  value)
+
+                    self.assertIsNone(result)
+
     async def test_check_within_threshold_notification_sent(self):
         mock_engine = mock.Mock()
         now = time.time()
