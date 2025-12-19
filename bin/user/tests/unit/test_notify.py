@@ -332,13 +332,17 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
         label = random_string()
         value = random.random()
         binding_type = random.choice(['archive', 'loop'])
+        if threshold_type == 'missing':
+            threshold_value = None
+        else:
+            threshold_value = int(value)
 
         config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
         config = configobj.ConfigObj(config_dict)
 
         expected_dict = {
             'threshold_type': threshold_type,
-            'threshold_value': int(value),
+            'threshold_value': threshold_value,
             'name': observation,
             'label': label,
             'current_value': value,
