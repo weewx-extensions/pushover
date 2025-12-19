@@ -182,7 +182,7 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
             'name': observation,
             'label': label,
             'current_value': value,
-            'type': 'outside',
+            'type': 'within',
             'notifications_sent': 1,
             'date_time': now,
         }
@@ -202,7 +202,7 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
                             SUT.archive_observations[observation][threshold_type]['count'] + 1
                         SUT.archive_observations[observation][threshold_type]['threshold_passed'] = {}
                         SUT.archive_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
-                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 0
+                        SUT.archive_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 1
                         result = SUT.check_within(threshold_type,
                                                   observation,
                                                   label,
@@ -214,17 +214,14 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
                             SUT.loop_observations[observation][threshold_type]['count'] + 1
                         SUT.loop_observations[observation][threshold_type]['threshold_passed'] = {}
                         SUT.loop_observations[observation][threshold_type]['threshold_passed']['timestamp'] = now
-                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 0
+                        SUT.loop_observations[observation][threshold_type]['threshold_passed']['notification_count'] = 1
                         result = SUT.check_within(threshold_type,
                                                   observation,
                                                   label,
                                                   SUT.loop_observations[observation][threshold_type],
                                                   value)
 
-                    print(result)
-                    print(expected_result)
-                    # self.assertEqual(result, expected_result)
-                    print('done')
+                    self.assertEqual(result, expected_result)
 
     async def test_check_outside_threshold_on_first_leaving(self):
         mock_engine = mock.Mock()
