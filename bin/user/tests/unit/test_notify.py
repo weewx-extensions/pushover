@@ -79,6 +79,8 @@ class MockClass():
     async def finalize(self):
         pass
 
+# ToDo: change call_count = 1 to called_once_with
+
 class TestNotify(unittest.IsolatedAsyncioTestCase):
     async def test_process_data_template(self):
         mock_engine = mock.Mock()
@@ -122,31 +124,447 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
                                                     await SUT._process_data(False, data, observations)
 
     async def test_process_data_min_within(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        threshold_type = 'min'
+        observation = random_string()
+        threshold_value = random.random()
+        label = random_string()
+        value = threshold_value + 1
+
+        data = {
+            observation: value,
+        }
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=threshold_value)
+        config = configobj.ConfigObj(config_dict)
+
+        observations = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task') as mock_create_task:
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
+                                                    mock_check_outside.return_value = None
+
+                                                    SUT = Notify(mock_engine, config)
+                                                    if binding_type == 'archive':
+                                                        observations = SUT.archive_observations
+                                                    if binding_type == 'loop':
+                                                        observations = SUT.loop_observations
+
+                                                    await SUT._process_data(False, data, observations)
+
+                                                    self.assertEqual(mock_check_within.call_count, 1)
+                                                    self.assertEqual(mock_check_outside.call_count, 0)
+                                                    self.assertEqual(mock_create_task.call_count, 1)
+                                                    self.assertEqual(mock_wait.call_count, 1)
+
 
     async def test_process_data_min_outside(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        threshold_type = 'min'
+        observation = random_string()
+        threshold_value = random.random()
+        label = random_string()
+        value = threshold_value - 1
+
+        data = {
+            observation: value,
+        }
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=threshold_value)
+        config = configobj.ConfigObj(config_dict)
+
+        observations = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task') as mock_create_task:
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
+                                                    mock_check_outside.return_value = None
+
+                                                    SUT = Notify(mock_engine, config)
+                                                    if binding_type == 'archive':
+                                                        observations = SUT.archive_observations
+                                                    if binding_type == 'loop':
+                                                        observations = SUT.loop_observations
+
+                                                    await SUT._process_data(False, data, observations)
+
+                                                    self.assertEqual(mock_check_within.call_count, 0)
+                                                    self.assertEqual(mock_check_outside.call_count, 1)
+                                                    self.assertEqual(mock_create_task.call_count, 0)
+                                                    self.assertEqual(mock_wait.call_count, 0)
 
     async def test_process_data_max_within(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        threshold_type = 'max'
+        observation = random_string()
+        threshold_value = random.random()
+        label = random_string()
+        value = threshold_value - 1
+
+        data = {
+            observation: value,
+        }
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=threshold_value)
+        config = configobj.ConfigObj(config_dict)
+
+        observations = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task') as mock_create_task:
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
+                                                    mock_check_outside.return_value = None
+
+                                                    SUT = Notify(mock_engine, config)
+                                                    if binding_type == 'archive':
+                                                        observations = SUT.archive_observations
+                                                    if binding_type == 'loop':
+                                                        observations = SUT.loop_observations
+
+                                                    await SUT._process_data(False, data, observations)
+
+                                                    self.assertEqual(mock_check_within.call_count, 1)
+                                                    self.assertEqual(mock_check_outside.call_count, 0)
+                                                    self.assertEqual(mock_create_task.call_count, 1)
+                                                    self.assertEqual(mock_wait.call_count, 1)
 
     async def test_process_data_max_outside(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        threshold_type = 'max'
+        observation = random_string()
+        threshold_value = random.random()
+        label = random_string()
+        value = threshold_value + 1
+
+        data = {
+            observation: value,
+        }
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=threshold_value)
+        config = configobj.ConfigObj(config_dict)
+
+        observations = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task') as mock_create_task:
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
+                                                    mock_check_outside.return_value = None
+
+                                                    SUT = Notify(mock_engine, config)
+                                                    if binding_type == 'archive':
+                                                        observations = SUT.archive_observations
+                                                    if binding_type == 'loop':
+                                                        observations = SUT.loop_observations
+
+                                                    await SUT._process_data(False, data, observations)
+
+                                                    self.assertEqual(mock_check_within.call_count, 0)
+                                                    self.assertEqual(mock_check_outside.call_count,1)
+                                                    self.assertEqual(mock_create_task.call_count, 0)
+                                                    self.assertEqual(mock_wait.call_count, 0)
 
     async def test_process_data_equal_within(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        threshold_type = 'equal'
+        observation = random_string()
+        threshold_value = random.randint(1, 99)
+        label = random_string()
+        value = threshold_value
+
+        data = {
+            observation: value,
+        }
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=threshold_value)
+        config = configobj.ConfigObj(config_dict)
+
+        observations = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task') as mock_create_task:
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
+                                                    mock_check_outside.return_value = None
+
+                                                    SUT = Notify(mock_engine, config)
+                                                    if binding_type == 'archive':
+                                                        observations = SUT.archive_observations
+                                                    if binding_type == 'loop':
+                                                        observations = SUT.loop_observations
+
+                                                    await SUT._process_data(False, data, observations)
+
+                                                    self.assertEqual(mock_check_within.call_count, 1)
+                                                    self.assertEqual(mock_check_outside.call_count, 0)
+                                                    self.assertEqual(mock_create_task.call_count, 1)
+                                                    self.assertEqual(mock_wait.call_count, 1)
 
     async def test_process_data_equal_outside(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        threshold_type = 'equal'
+        observation = random_string()
+        threshold_value = random.randint(1, 99)
+        label = random_string()
+        value = threshold_value + 1
+
+        data = {
+            observation: value,
+        }
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=threshold_value)
+        config = configobj.ConfigObj(config_dict)
+
+        observations = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task') as mock_create_task:
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
+                                                    mock_check_outside.return_value = None
+
+                                                    SUT = Notify(mock_engine, config)
+                                                    if binding_type == 'archive':
+                                                        observations = SUT.archive_observations
+                                                    if binding_type == 'loop':
+                                                        observations = SUT.loop_observations
+
+                                                    await SUT._process_data(False, data, observations)
+
+                                                    self.assertEqual(mock_check_within.call_count, 0)
+                                                    self.assertEqual(mock_check_outside.call_count, 1)
+                                                    self.assertEqual(mock_create_task.call_count, 0)
+                                                    self.assertEqual(mock_wait.call_count, 0)
 
     async def test_process_data_observation_returns(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        threshold_type = 'missing'
+        observation = random_string()
+        threshold_value = random.random()
+        label = random_string()
+        value = random.random()
+
+        data = {
+            observation: value,
+        }
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=threshold_value)
+        config = configobj.ConfigObj(config_dict)
+
+        observations = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task') as mock_create_task:
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
+                                                    mock_check_outside.return_value = None
+
+                                                    SUT = Notify(mock_engine, config)
+                                                    if binding_type == 'archive':
+                                                        observations = SUT.archive_observations
+                                                    if binding_type == 'loop':
+                                                        observations = SUT.loop_observations
+
+                                                    await SUT._process_data(False, data, observations)
+
+                                                    self.assertEqual(mock_check_within.call_count, 1)
+                                                    self.assertEqual(mock_check_outside.call_count, 0)
+                                                    self.assertEqual(mock_create_task.call_count, 1)
+                                                    self.assertEqual(mock_wait.call_count, 1)
 
     async def test_process_data_observation_gone_missing(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        threshold_type = 'missing'
+        observation = random_string()
+        threshold_value = random.random()
+        label = random_string()
+        value = random.random()
+
+        data = {
+            random_string(): value,
+        }
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=threshold_value)
+        config = configobj.ConfigObj(config_dict)
+
+        observations = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task') as mock_create_task:
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
+                                                    mock_check_outside.return_value = None
+
+                                                    SUT = Notify(mock_engine, config)
+                                                    if binding_type == 'archive':
+                                                        observations = SUT.archive_observations
+                                                    if binding_type == 'loop':
+                                                        observations = SUT.loop_observations
+
+                                                    await SUT._process_data(False, data, observations)
+
+                                                    self.assertEqual(mock_check_within.call_count, 0)
+                                                    self.assertEqual(mock_check_outside.call_count, 1)
+                                                    self.assertEqual(mock_create_task.call_count, 0)
+                                                    self.assertEqual(mock_wait.call_count, 0)
 
     async def test_process_data_observation_gone_missing_succeeds(self):
-        pass
+        mock_engine = mock.Mock()
+        now = time.time()
+
+        threshold_type = 'missing'
+        observation = random_string()
+        threshold_value = random.random()
+        label = random_string()
+        value = random.random()
+
+        data = {
+            random_string(): value,
+        }
+        binding_type = random.choice(['archive', 'loop'])
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=threshold_value)
+        config = configobj.ConfigObj(config_dict)
+
+        observations = None
+
+        with mock.patch('user.notify.time') as mock_time:
+            with mock.patch('asyncio.create_task') as mock_create_task:
+                with mock.patch('asyncio.wait') as mock_wait:
+                    with mock.patch('user.notify.Logger', spec=Logger):
+                        with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
+                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                    with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                            with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
+                                                with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
+                                                    mock_time.time.return_value = now
+                                                    mock_wait.return_value = ([mock.Mock()], [mock.Mock()])
+                                                    mock_weeutil.get_object.return_value = MockClass
+                                                    mock_check_outside.return_value = 'foo'
+
+                                                    SUT = Notify(mock_engine, config)
+                                                    if binding_type == 'archive':
+                                                        observations = SUT.archive_observations
+                                                    if binding_type == 'loop':
+                                                        observations = SUT.loop_observations
+
+                                                    await SUT._process_data(False, data, observations)
+
+                                                    self.assertEqual(mock_check_within.call_count, 0)
+                                                    self.assertEqual(mock_check_outside.call_count, 1)
+                                                    self.assertEqual(mock_create_task.call_count, 1)
+                                                    self.assertEqual(mock_wait.call_count, 1)
+                                                    print('done')
 
     async def test_process_data_within_succeeds(self):
         mock_engine = mock.Mock()
@@ -785,17 +1203,17 @@ if __name__ == '__main__':
     test_suite = unittest.TestSuite()
     # test_suite.addTest(TestNotify('test_process_data_observation_is_none'))
     # test_suite.addTest(TestNotify('test_process_data_outside_succeeds'))
-    test_suite.addTest(TestNotify('test_process_data_within_succeeds'))
-    test_suite.addTest(TestNotify('test_process_data_observation_gone_missing_succeeds'))
-    test_suite.addTest(TestNotify('test_process_data_observation_gone_missing'))
-    test_suite.addTest(TestNotify('test_process_data_observation_returns'))
-    test_suite.addTest(TestNotify('test_process_data_equal_outside'))
-    test_suite.addTest(TestNotify('test_process_data_equal_within'))
-    test_suite.addTest(TestNotify('test_process_data_max_outside'))
-    test_suite.addTest(TestNotify('test_process_data_max_within'))
-    test_suite.addTest(TestNotify('test_process_data_min_outside'))
-    test_suite.addTest(TestNotify('test_process_data_min_within'))
+    # test_suite.addTest(TestNotify('test_process_data_within_succeeds'))
+    # test_suite.addTest(TestNotify('test_process_data_observation_gone_missing_succeeds'))
+    # test_suite.addTest(TestNotify('test_process_data_observation_gone_missing'))
+    # test_suite.addTest(TestNotify('test_process_data_observation_returns'))
+    # test_suite.addTest(TestNotify('test_process_data_equal_outside'))
+    # test_suite.addTest(TestNotify('test_process_data_equal_within'))
+    # test_suite.addTest(TestNotify('test_process_data_max_outside'))
+    # test_suite.addTest(TestNotify('test_process_data_max_within'))
+    # test_suite.addTest(TestNotify('test_process_data_min_outside'))
+    # test_suite.addTest(TestNotify('test_process_data_min_within'))
 
-    unittest.TextTestRunner().run(test_suite)
+    # unittest.TextTestRunner().run(test_suite)
 
-    # unittest.main(exit=False)
+    unittest.main(exit=False)
