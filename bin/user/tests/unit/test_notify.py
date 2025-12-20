@@ -79,9 +79,99 @@ class MockClass():
     async def finalize(self):
         pass
 
-# ToDo: change call_count = 1 to called_once_with
+class TestNotify(unittest.TestCase):
+    def test_init_observations_with_defaults(self):
+        mock_engine = mock.Mock()
 
-class TestNotify(unittest.IsolatedAsyncioTestCase):
+        binding_type = random_string()
+        observation = random_string()
+        threshold_type = random.choice(['min', 'max', 'equal'])
+        label = random_string()
+        value = random.randint(11, 999)
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
+        # Set enable to False, 'short circuits' the init
+        config_dict['Notify']['enable'] = False
+        del config_dict['Notify'][binding_type][observation][threshold_type]['count']
+        del config_dict['Notify'][binding_type][observation][threshold_type]['wait_time']
+        del config_dict['Notify'][binding_type][observation][threshold_type]['return_notification']
+        config = configobj.ConfigObj(config_dict)
+
+        default_count = random.randint(1, 10)
+        default_wait_time = random.randint(1001, 9999)
+        default_return_notification = random.choice([True, False])
+
+        expected_observations = {
+            'name': observation,
+            'weewx_name': observation,
+            'label': f' ({label})',
+            threshold_type: {
+                'value': value,
+                'count': default_count,
+                'wait_time': default_wait_time,
+                'return_notification': default_return_notification,
+                'last_sent_timestamp': 0,
+                'counter': 0,
+            },
+        }
+
+        with mock.patch('user.notify.Logger', spec=Logger):
+            SUT = Notify(mock_engine, config)
+
+            observations = SUT.init_observations(config['Notify'][binding_type][observation],
+                                                 observation,
+                                                 default_count,
+                                                 default_wait_time,
+                                                 default_return_notification)
+
+            self.assertDictEqual(observations, expected_observations)
+
+    def test_init_observations_threshold_type_equals_missing(self):
+        mock_engine = mock.Mock()
+
+        binding_type = random_string()
+        observation = random_string()
+        threshold_type = 'missing'
+        label = random_string()
+        value = random.randint(11, 999)
+
+        config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
+        # Set enable to False, 'short circuits' the init
+        config_dict['Notify']['enable'] = False
+        config = configobj.ConfigObj(config_dict)
+
+        default_count = -1
+        default_wait_time = -1
+        default_return_notification = False
+
+        expected_observations = {
+            'name': observation,
+            'weewx_name': observation,
+            'label': f' ({label})',
+            threshold_type: {
+                'value': None,
+                'count': 10,
+                'wait_time': 3600,
+                'return_notification': True,
+                'last_sent_timestamp': 0,
+                'counter': 0,
+            },
+            'returned': {},
+        }
+
+        with mock.patch('user.notify.Logger', spec=Logger):
+            SUT = Notify(mock_engine, config)
+
+            observations = SUT.init_observations(config['Notify'][binding_type][observation],
+                                                 observation,
+                                                 default_count,
+                                                 default_wait_time,
+                                                 default_return_notification)
+
+            self.assertDictEqual(observations, expected_observations)
+
+# ToDo: change call_count = 1 to called_once_with
+class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
     async def test_process_data_template(self):
         mock_engine = mock.Mock()
         now = time.time()
@@ -171,7 +261,6 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
                                                     self.assertEqual(mock_check_outside.call_count, 0)
                                                     self.assertEqual(mock_create_task.call_count, 1)
                                                     self.assertEqual(mock_wait.call_count, 1)
-
 
     async def test_process_data_min_outside(self):
         mock_engine = mock.Mock()
@@ -316,7 +405,7 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
                                                     await SUT._process_data(False, data, observations)
 
                                                     self.assertEqual(mock_check_within.call_count, 0)
-                                                    self.assertEqual(mock_check_outside.call_count,1)
+                                                    self.assertEqual(mock_check_outside.call_count, 1)
                                                     self.assertEqual(mock_create_task.call_count, 0)
                                                     self.assertEqual(mock_wait.call_count, 0)
 
@@ -564,7 +653,6 @@ class TestNotify(unittest.IsolatedAsyncioTestCase):
                                                     self.assertEqual(mock_check_outside.call_count, 1)
                                                     self.assertEqual(mock_create_task.call_count, 1)
                                                     self.assertEqual(mock_wait.call_count, 1)
-                                                    print('done')
 
     async def test_process_data_within_succeeds(self):
         mock_engine = mock.Mock()
