@@ -130,6 +130,9 @@ class Notify(StdService):
             if value_type in config:
                 observation[value_type] = {}
                 if value_type != 'missing':
+                    # ToDo: should this be converted to float? 'equal' check is a bit of a challenge...
+                    # Maybe only convert 'equal' to int and min/max to float?
+                    # Or document that threshold is an integer
                     observation[value_type]['value'] = int(config[value_type]['value'])
                 else:
                     observation['returned'] = {}
