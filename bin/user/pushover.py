@@ -79,6 +79,7 @@ Send a notification via pushover, pushover.net
                 #    the section is 'max' and the observation is greater than 'value
                 #    the section is 'equal' and the observation is not equal to 'value
                 # Does not need to be set when the section is 'missing'.
+                # The value is an integer.
                 value = REPLACE_ME
 
                 # The number of times the threshold needs to be reached before sending a notification.
