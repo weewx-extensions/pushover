@@ -14,7 +14,7 @@ import configobj
 from collections import namedtuple
 
 from user.notify import Logger
-from user.pushover import PushOver
+from user.pushover import Pushover
 
 class TestPushoverAsync(unittest.IsolatedAsyncioTestCase):
     # This is a bit silly test, but it is a good template for testing HTTP Post
@@ -25,7 +25,7 @@ class TestPushoverAsync(unittest.IsolatedAsyncioTestCase):
         config_dict = {}
         config = configobj.ConfigObj(config_dict)
 
-        SUT = PushOver(mock_logger, config)
+        SUT = Pushover(mock_logger, config)
 
         msg_data_dict = {
             'threshold_type': 'equal',

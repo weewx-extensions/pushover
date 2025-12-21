@@ -17,11 +17,11 @@ Configuration:
 
     # The name of the notification provider.
     # There must be a matching section within '[Notify]'.
-    # The default is PushOver.
-    notifier = PushOver
+    # The default is Pushover.
+    notifier = Pushover
 
     # Configuration data for the notification provider.
-    [[PushOver]]
+    [[Pushover]]
 '''
 
 import asyncio
@@ -71,7 +71,7 @@ class Notify(StdService):
             self.logger.loginf(self.name, "Notify is not enabled, exiting")
             return
 
-        notifier_name = service_dict.get('notifier', 'PushOver')
+        notifier_name = service_dict.get('notifier', 'Pushover')
         notifier_dict = service_dict.get(notifier_name, None)
         if not notifier_dict:
             raise ValueError("'notifier' is required.")

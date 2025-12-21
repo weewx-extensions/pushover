@@ -35,7 +35,7 @@ def setup_config_dict(binding,
     config_dict = {
         'Notify':
         {
-            'PushOver': {
+            'Pushover': {
                 'extension': random_string(),
             },
             binding:

@@ -15,14 +15,14 @@ After [installing](https://weewx.com/docs/5.0/utilities/weectl-extension/#instal
 
     # The name of the notification provider.
     # There must be a matching section within '[Notify]'.
-    # The default is PushOver.
-    notifier = PushOver
+    # The default is Pushover.
+    notifier = Pushover
 
     # Configuration data for the notification provider.
     # The value of this section name must match the value of the 'notifier =' option.
-    [[PushOver]]
+    [[Pushover]]
         # The extension (service) to use.
-        extension = user.pushover.PushOver
+        extension = user.pushover.Pushover
 
         # The number of seconds to wait for the notification to be sent and processed.
         # Default is None

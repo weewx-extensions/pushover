@@ -22,14 +22,14 @@ EXTENSION_CONFIG = """
 
     # The name of the notification provider.
     # There must be a matching section within '[Notify]'.
-    # The default is PushOver.
-    notifier = PushOver
+    # The default is Pushover.
+    notifier = Pushover
 
     # Configuration data for the notification provider.
     # The value of this section name must match the value of the 'notifier =' option.
-    [[PushOver]]
+    [[Pushover]]
         # The extension (service) to use.
-        extension = user.pushover.PushOver
+        extension = user.pushover.Pushover
 
         # The number of seconds to wait for the notification to be sent and processed.
         # Default is None
@@ -86,9 +86,9 @@ EXTENSION_CONFIG = """
 
             # A more human readable 'name' for this observation.
             # Default value is 'empty'/no value.
-            # label = 
+            # label =
 
-            # The type of noitifcation. 
+            # The type of noitifcation.
             # Specify one or more.
             [[[[ 'min' or 'max' or 'equal' or 'missing']]]]
                 # The value to monitor.
@@ -103,7 +103,7 @@ EXTENSION_CONFIG = """
                 # The number of times the threshold needs to be reached before sending a notification.
                 # The default is 10.
                 count = 10
-                            
+
                 # The time in seconds to wait before sending another notification.
                 # This is used to throttle the number of notifications.
                 # The default is 3600 seconds.

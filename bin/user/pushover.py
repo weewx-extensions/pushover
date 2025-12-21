@@ -8,13 +8,13 @@ Send a notification via pushover, pushover.net
 
 [Notify]
 
-    notifier = PushOver
+    notifier = Pushover
 
-    # Configuration data for the notification provider, PushOver.
+    # Configuration data for the notification provider, Pushover.
     # The value of this section name must match the value of the 'notifier =' option.
-    [[PushOver]]
+    [[Pushover]]
         # The extension (service) to use.
-        extension = user.pushover.PushOver
+        extension = user.pushover.Pushover
 
         # The number of seconds to wait for the notification to be sent and processed.
         # Default is None
@@ -112,7 +112,7 @@ def format_timestamp(ts, format_str="%Y-%m-%d %H:%M:%S %Z"):
     ''' Format a timestamp for human consumption. '''
     return f"{time.strftime(format_str, time.localtime(ts))}"
 
-class PushOver(user.notify.AbstractNotifier):
+class Pushover(user.notify.AbstractNotifier):
     """ Class to perform the pushover call."""
     def __init__(self, logger, notifier_dict):
         super().__init__(logger, notifier_dict)
