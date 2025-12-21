@@ -661,8 +661,10 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
         label = random_string()
         if threshold_type == 'min':
             value = threshold_value + 1
-        else:
+        elif threshold_type == 'max':
             value = threshold_value - 1
+        else:
+            value = threshold_value
 
         data = {
             observation: value,

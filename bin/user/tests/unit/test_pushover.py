@@ -16,7 +16,7 @@ from collections import namedtuple
 from user.notify import Logger
 from user.pushover import PushOver
 
-class TestTest(unittest.IsolatedAsyncioTestCase):
+class TestPushoverAsync(unittest.IsolatedAsyncioTestCase):
     # This is a bit silly test, but it is a good template for testing HTTP Post
     # ToDo: change call_count = 1 to called_once_with
     async def test_error_sending_notification(self):
