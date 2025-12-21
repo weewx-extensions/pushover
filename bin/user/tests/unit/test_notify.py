@@ -175,7 +175,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         data = {
             observation: random.random(),
@@ -216,7 +216,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = 'min'
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         value = threshold_value + 1
 
@@ -265,7 +265,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = 'min'
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         value = threshold_value - 1
 
@@ -314,7 +314,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = 'max'
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         value = threshold_value - 1
 
@@ -363,7 +363,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = 'max'
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         value = threshold_value + 1
 
@@ -510,7 +510,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = 'missing'
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         value = random.random()
 
@@ -559,7 +559,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = 'missing'
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         value = random.random()
 
@@ -608,7 +608,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = 'missing'
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         value = random.random()
 
@@ -657,7 +657,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = random.choice(['min', 'max', 'equal'])
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         if threshold_type == 'min':
             value = threshold_value + 1
@@ -709,7 +709,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = random.choice(['min', 'max', 'equal'])
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         if threshold_type == 'min':
             value = threshold_value - 1
@@ -761,7 +761,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
 
         threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
         observation = random_string()
-        threshold_value = random.random()
+        threshold_value = random.randint(1, 99)
         label = random_string()
         data = {
             observation: None,
@@ -948,12 +948,12 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
         threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
         observation = random_string()
         label = random_string()
-        value = random.random()
+        value = random.randint(1, 99)
         binding_type = random.choice(['archive', 'loop'])
         if threshold_type == 'missing':
             threshold_value = None
         else:
-            threshold_value = int(value)
+            threshold_value = value
 
         config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
         config = configobj.ConfigObj(config_dict)
@@ -1108,12 +1108,12 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
         threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
         observation = random_string()
         label = random_string()
-        value = random.random()
+        value = random.randint(1, 99)
         binding_type = random.choice(['archive', 'loop'])
         if threshold_type == 'missing':
             threshold_value = None
         else:
-            threshold_value = int(value)
+            threshold_value = value
 
         config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
         config = configobj.ConfigObj(config_dict)
@@ -1224,12 +1224,12 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
         threshold_type = random.choice(['missing', 'min', 'max', 'equal'])
         observation = random_string()
         label = random_string()
-        value = random.random()
+        value = random.randint(1, 99)
         binding_type = random.choice(['archive', 'loop'])
         if threshold_type == 'missing':
             threshold_value = None
         else:
-            threshold_value = int(value)
+            threshold_value = value
 
         config_dict = setup_config_dict(binding_type, observation, threshold_type, label, value=value)
         config = configobj.ConfigObj(config_dict)
