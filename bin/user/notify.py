@@ -120,7 +120,7 @@ class Notify(StdService):
     def init_observations(self, config, observation_name, count, wait_time, return_notification):
         ''' Initialize the observation configruation. '''
         observation = {}
-        observation['name'] = config.get('name', observation_name)
+        #observation['name'] = config.get('name', observation_name)
         observation['weewx_name'] = config.get('weewx_name', observation_name)
         observation['label'] = config.get('label', '')
         if observation['label']:
@@ -154,7 +154,7 @@ class Notify(StdService):
         result2 = {
             'threshold_type': notification_type,
             'threshold_value': observation_detail['value'],
-            'name': name,
+            'weewx_name': name,
             'label': label,
             'current_value': value,
         }
@@ -192,7 +192,7 @@ class Notify(StdService):
         result2 = {
             'threshold_type': notification_type,
             'threshold_value': observation_detail['value'],
-            'name': name,
+            'weewx_name': name,
             'label': label,
             'current_value': value,
         }
@@ -244,14 +244,14 @@ class Notify(StdService):
                            (detail_type == 'max' and data[observation] <= observation_detail[detail_type]['value']) or \
                            (detail_type == 'equal' and data[observation] == observation_detail[detail_type]['value']):
                             result = self.check_within(detail_type,
-                                                       observation_detail['name'],
+                                                       observation_detail['weewx_name'],
                                                        observation_detail['label'],
                                                        observation_detail[detail_type],
                                                        data[observation])
                         else:
                             result = self.check_outside(first_check,
                                                         detail_type,
-                                                        observation_detail['name'],
+                                                        observation_detail['weewx_name'],
                                                         observation_detail['label'],
                                                         observation_detail[detail_type],
                                                         data[observation])
@@ -268,7 +268,7 @@ class Notify(StdService):
             if observation not in data and observation_detail.get(detail_type, None):
                 result = self.check_outside(first_check,
                                             detail_type,
-                                            observation_detail['name'],
+                                            observation_detail['weewx_name'],
                                             observation_detail['label'],
                                             observation_detail['missing'],
                                             None)

@@ -102,7 +102,7 @@ class TestNotify(unittest.TestCase):
         default_return_notification = random.choice([True, False])
 
         expected_observations = {
-            'name': observation,
+            #'name': observation,
             'weewx_name': observation,
             'label': f' ({label})',
             threshold_type: {
@@ -145,7 +145,7 @@ class TestNotify(unittest.TestCase):
         default_return_notification = False
 
         expected_observations = {
-            'name': observation,
+            #'name': observation,
             'weewx_name': observation,
             'label': f' ({label})',
             threshold_type: {
@@ -964,7 +964,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
         expected_dict = {
             'threshold_type': threshold_type,
             'threshold_value': threshold_value,
-            'name': observation,
+            'weewx_name': observation,
             'label': label,
             'current_value': value,
             'type': 'within',
@@ -1124,7 +1124,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
         expected_dict = {
             'threshold_type': threshold_type,
             'threshold_value': threshold_value,
-            'name': observation,
+            'weewx_name': observation,
             'label': label,
             'current_value': value,
             'type': 'outside',
@@ -1240,7 +1240,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
         expected_dict = {
             'threshold_type': threshold_type,
             'threshold_value': threshold_value,
-            'name': observation,
+            'weewx_name': observation,
             'label': label,
             'current_value': value,
             'type': 'outside',

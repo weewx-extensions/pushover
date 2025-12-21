@@ -30,7 +30,7 @@ class TestTest(unittest.IsolatedAsyncioTestCase):
             'threshold_type': 'equal',
             'type': 'outside',
             'date_time': 1,
-            'name': 'foo',
+            'weewx_name': 'foo',
             'label': 'foo',
             'threshold_value': 101,
             'current_value': 102,
