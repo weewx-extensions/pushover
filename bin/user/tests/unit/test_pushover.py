@@ -97,7 +97,7 @@ class TestPushover(unittest.TestCase):
 
                 self.assertFalse(result)
                 self.assertEqual(SUT.client_error_timestamp, 0)
-                self.assertEquals(SUT.client_error_last_logged, 0)
+                self.assertEqual(SUT.client_error_last_logged, 0)
                 self.assertEqual(SUT.server_error_timestamp, now)
                 self.assertEqual(mock_logger.logerr.call_count, 2)
 
