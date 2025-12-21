@@ -23,8 +23,24 @@ from user.pushover import Pushover
 def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)])
 
-
 class TestPushover(unittest.TestCase):
+    def test_throttle_notification(self):
+        mock_logger = mock.Mock(spec=Logger)
+        now = time.time()
+
+        config_dict = {}
+        config = configobj.ConfigObj(config_dict)
+
+        with mock.patch('user.pushover.time') as mock_time:
+            mock_time.time.return_value = now
+
+            SUT = Pushover(mock_logger, config)
+
+            result = SUT.throttle_notification()
+
+            print(result)
+            print('done')
+
     def test_check_response_with_success_200(self):
         mock_logger = mock.Mock(spec=Logger)
 

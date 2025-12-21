@@ -149,7 +149,6 @@ class Pushover(user.notify.AbstractNotifier):
                                            f"waiting {self.server_error_wait_period} seconds before retrying."))
             return True
 
-        self.server_error_timestamp = 0
         return False
 
     async def send_notification(self, msg_data):
@@ -182,6 +181,7 @@ class Pushover(user.notify.AbstractNotifier):
         now = time.time()
         self.logger.logdbg(self.name, f"Response code is: '{response.code}' for {msg_data.weewx_name}")
 
+        self.server_error_timestamp = 0
         if response.code == 200:
             return True
 
