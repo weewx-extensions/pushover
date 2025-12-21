@@ -120,7 +120,6 @@ class Notify(StdService):
     def init_observations(self, config, observation_name, count, wait_time, return_notification):
         ''' Initialize the observation configruation. '''
         observation = {}
-        #observation['name'] = config.get('name', observation_name)
         observation['weewx_name'] = config.get('weewx_name', observation_name)
         observation['label'] = config.get('label', '')
         if observation['label']:
@@ -135,7 +134,6 @@ class Notify(StdService):
                     # Or document that threshold is an integer
                     observation[value_type]['value'] = int(config[value_type]['value'])
                 else:
-                    observation['returned'] = {}
                     observation[value_type]['value'] = None
                 observation[value_type]['count'] = int(config[value_type].get('count', count))
                 observation[value_type]['wait_time'] = to_int(config[value_type].get('wait_time', wait_time))

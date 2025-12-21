@@ -102,7 +102,6 @@ class TestNotify(unittest.TestCase):
         default_return_notification = random.choice([True, False])
 
         expected_observations = {
-            #'name': observation,
             'weewx_name': observation,
             'label': f' ({label})',
             threshold_type: {
@@ -145,7 +144,6 @@ class TestNotify(unittest.TestCase):
         default_return_notification = False
 
         expected_observations = {
-            #'name': observation,
             'weewx_name': observation,
             'label': f' ({label})',
             threshold_type: {
@@ -156,7 +154,6 @@ class TestNotify(unittest.TestCase):
                 'last_sent_timestamp': 0,
                 'counter': 0,
             },
-            'returned': {},
         }
 
         with mock.patch('user.notify.Logger', spec=Logger):

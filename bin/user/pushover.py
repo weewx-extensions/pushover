@@ -181,7 +181,7 @@ class PushOver(user.notify.AbstractNotifier):
         if response.code == 200:
             return True
 
-        self.logger.logerr(self.name, f"Received code '{response.code}' for {msg_data.weex_name}")
+        self.logger.logerr(self.name, f"Received code '{response.code}' for {msg_data.weewx_name}")
         if response.code >= 400 and response.code < 500:
             self.client_error_timestamp = now
             self.client_error_last_logged = now
@@ -191,9 +191,9 @@ class PushOver(user.notify.AbstractNotifier):
         try:
             response_dict = json.loads(response_body)
             errors = '\n'.join(response_dict['errors'])
-            self.logger.logerr(self.name, f"{errors} for {msg_data.name}")
+            self.logger.logerr(self.name, f"{errors} for {msg_data.weewx_name}")
         except json.JSONDecodeError as exception:
-            self.logger.logerr(self.name, f"Unable to parse '{exception.doc}' for {msg_data.name}.")
+            self.logger.logerr(self.name, f"Unable to parse '{exception.doc}' for {msg_data.weewx_name}.")
             self.logger.logerr(self.name, (f"Error at '{exception.pos}', line: '{exception.lineno}' "
-                                           f"column: '{exception.colno}' for {msg_data.name}"))
+                                           f"column: '{exception.colno}' for {msg_data.weewx_name}"))
         return False

@@ -30,7 +30,8 @@ archive_observations {
                 // The timestamp of the first observation that is not 'within threshold'.
                 timestamp: now,
                 // The count of notifications sent.
-                // Note, might not actually have sent all? ToDo: do some research
+                // Note, might not actually have sent all? 
+                // ToDo: do some research
                 notification_count: 1
             }
         },
