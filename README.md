@@ -19,6 +19,7 @@ After [installing](https://weewx.com/docs/5.0/utilities/weectl-extension/#instal
     notifier = PushOver
 
     # Configuration data for the notification provider.
+    # The value of this section name must match the value of the 'notifier =' option.
     [[PushOver]]
         # The extension (service) to use.
         extension = user.pushover.PushOver

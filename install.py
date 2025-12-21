@@ -26,6 +26,7 @@ EXTENSION_CONFIG = """
     notifier = PushOver
 
     # Configuration data for the notification provider.
+    # The value of this section name must match the value of the 'notifier =' option.
     [[PushOver]]
         # The extension (service) to use.
         extension = user.pushover.PushOver
