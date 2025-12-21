@@ -122,8 +122,6 @@ class Notify(StdService):
         observation = {}
         observation['weewx_name'] = config.get('weewx_name', observation_name)
         observation['label'] = config.get('label', '')
-        if observation['label']:
-            observation['label'] = ' (' + observation['label'] + ')'
 
         for value_type in ['min', 'max', 'equal', 'missing']:
             if value_type in config:

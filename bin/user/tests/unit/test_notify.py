@@ -103,7 +103,7 @@ class TestNotify(unittest.TestCase):
 
         expected_observations = {
             'weewx_name': observation,
-            'label': f' ({label})',
+            'label': label,
             threshold_type: {
                 'value': value,
                 'count': default_count,
@@ -145,7 +145,7 @@ class TestNotify(unittest.TestCase):
 
         expected_observations = {
             'weewx_name': observation,
-            'label': f' ({label})',
+            'label': label,
             threshold_type: {
                 'value': None,
                 'count': 10,
