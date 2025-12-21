@@ -328,7 +328,7 @@ class AbstractNotifier():
 
     def build_title(self, msg_data):
         """ Build a title based on threshold status."""
-        return f"Unexpected value for {msg_data.name}."
+        return f"Unexpected value for {msg_data.weewx_name}."
 
     def build_message(self, msg_data):
         """ Build a message based on threshold status."""
@@ -360,20 +360,20 @@ class AbstractNotifier():
         }
 
         if msg_data.threshold_type == 'missing' and msg_data.type == 'outside':
-            return msg_missing_template[msg_data.type].format(name=msg_data.name,
+            return msg_missing_template[msg_data.type].format(name=msg_data.weewx_name,
                                                               label=msg_data.label,
                                                               date_time=format_timestamp(msg_data.date_time),
                                                               notifications_sent=msg_data.notifications_sent)
 
         if msg_data.threshold_type == 'missing' and msg_data.type == 'within':
-            return msg_missing_template[msg_data.type].format(name=msg_data.name,
+            return msg_missing_template[msg_data.type].format(name=msg_data.weewx_name,
                                                               label=msg_data.label,
                                                               date_time=format_timestamp(msg_data.date_time),
                                                               current_value=msg_data.current_value,
                                                               notifications_sent=msg_data.notifications_sent)
 
         return msg_template[msg_data.threshold_type][msg_data.type].format(date_time=format_timestamp(msg_data.date_time),
-                                                                           name=msg_data.name,
+                                                                           name=msg_data.weewx_name,
                                                                            label=msg_data.label,
                                                                            threshold_value=msg_data.threshold_value,
                                                                            current_value=msg_data.current_value,

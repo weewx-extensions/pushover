@@ -150,7 +150,7 @@ class PushOver(user.notify.AbstractNotifier):
 
     async def send_notification(self, msg_data):
         self.logger.logdbg(self.name, f"Message data is '{msg_data}'")
-        self.logger.logdbg(self.name, f"Server is: '{self.server}' for {msg_data.name}")
+        self.logger.logdbg(self.name, f"Server is: '{self.server}' for {msg_data.weewx_name}")
         title = self.build_title(msg_data)
         msg = self.build_message(msg_data)
 
@@ -176,12 +176,12 @@ class PushOver(user.notify.AbstractNotifier):
     def _check_response(self, response, msg_data):
         ''' Check the response. '''
         now = time.time()
-        self.logger.logdbg(self.name, f"Response code is: '{response.code}' for {msg_data.name}")
+        self.logger.logdbg(self.name, f"Response code is: '{response.code}' for {msg_data.weewx_name}")
 
         if response.code == 200:
             return True
 
-        self.logger.logerr(self.name, f"Received code '{response.code}' for {msg_data.name}")
+        self.logger.logerr(self.name, f"Received code '{response.code}' for {msg_data.weex_name}")
         if response.code >= 400 and response.code < 500:
             self.client_error_timestamp = now
             self.client_error_last_logged = now
