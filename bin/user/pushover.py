@@ -128,7 +128,6 @@ class Pushover(user.notify.AbstractNotifier):
         self.server_error_wait_period = to_int(notifier_dict.get('server_error_wait_period', 3600))
 
         self.client_error_timestamp = 0
-        self.client_error_last_logged = 0
         self.server_error_timestamp = 0
 
     def _logit(self, title, msg):
@@ -137,12 +136,10 @@ class Pushover(user.notify.AbstractNotifier):
 
     def throttle_notification(self):
         now = int(time.time())
-        if self.client_error_timestamp:
-            if abs(now - self.client_error_last_logged) < self.client_error_log_frequency:
-                self.logger.logerr(self.name, (f"Fatal error occurred at {format_timestamp(self.client_error_timestamp)}, "
-                                               f"Notify skipped."))
-                self.client_error_last_logged = now
-                return True
+        if abs(now - self.client_error_timestamp) < self.client_error_log_frequency:
+            self.logger.logdbg(self.name, (f"Fatal error occurred at {format_timestamp(self.client_error_timestamp)}, "
+                                            f"Notify skipped."))
+            return True
 
         if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
             self.logger.logdbg(self.name, (f"Server error received at {format_timestamp(self.server_error_timestamp)}, "
@@ -182,13 +179,13 @@ class Pushover(user.notify.AbstractNotifier):
         self.logger.logdbg(self.name, f"Response code is: '{response.code}' for {msg_data.weewx_name}")
 
         self.server_error_timestamp = 0
+        self.client_error_timestamp = 0
         if response.code == 200:
             return True
 
         self.logger.logerr(self.name, f"Received code '{response.code}' for {msg_data.weewx_name}")
         if response.code >= 400 and response.code < 500:
             self.client_error_timestamp = now
-            self.client_error_last_logged = now
         if response.code >= 500 and response.code < 600:
             self.server_error_timestamp = now
         response_body = response.read().decode()

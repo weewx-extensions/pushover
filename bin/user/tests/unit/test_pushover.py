@@ -24,7 +24,7 @@ def random_string(length=32):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)])
 
 class TestPushover(unittest.TestCase):
-    def test_throttle_notification(self):
+    def test_throttle_notification_no_recent_errors(self):
         mock_logger = mock.Mock(spec=Logger)
         now = time.time()
 
@@ -38,8 +38,47 @@ class TestPushover(unittest.TestCase):
 
             result = SUT.throttle_notification()
 
-            print(result)
-            print('done')
+            self.assertFalse(result)
+
+    def test_throttle_notification_client_error_recent(self):
+        mock_logger = mock.Mock(spec=Logger)
+        now = time.time()
+
+        config_dict = {}
+        config = configobj.ConfigObj(config_dict)
+
+        with mock.patch('user.pushover.time') as mock_time:
+            mock_time.time.return_value = now
+
+            SUT = Pushover(mock_logger, config)
+
+            SUT.client_error_timestamp = now
+
+            result = SUT.throttle_notification()
+
+            # ToDo: change call_count == 1 to called_once_with
+            self.assertTrue(result)
+            self.assertEqual(mock_logger.logdbg.call_count, 1)
+
+    def test_throttle_notification_server_error_recent(self):
+        mock_logger = mock.Mock(spec=Logger)
+        now = time.time()
+
+        config_dict = {}
+        config = configobj.ConfigObj(config_dict)
+
+        with mock.patch('user.pushover.time') as mock_time:
+            mock_time.time.return_value = now
+
+            SUT = Pushover(mock_logger, config)
+
+            SUT.server_error_timestamp = now
+
+            result = SUT.throttle_notification()
+
+            # ToDo: change call_count == 1 to called_once_with
+            self.assertTrue(result)
+            self.assertEqual(mock_logger.logdbg.call_count, 1)
 
     def test_check_response_with_success_200(self):
         mock_logger = mock.Mock(spec=Logger)
@@ -75,7 +114,6 @@ class TestPushover(unittest.TestCase):
 
                 self.assertTrue(result)
                 self.assertEqual(SUT.client_error_timestamp, 0)
-                self.assertEqual(SUT.client_error_last_logged, 0)
                 self.assertEqual(SUT.server_error_timestamp, 0)
                 self.assertEqual(mock_logger.logerr.call_count, 0)
 
@@ -113,7 +151,6 @@ class TestPushover(unittest.TestCase):
 
                 self.assertFalse(result)
                 self.assertEqual(SUT.client_error_timestamp, now)
-                self.assertEqual(SUT.client_error_last_logged, now)
                 self.assertEqual(SUT.server_error_timestamp, 0)
                 self.assertEqual(mock_logger.logerr.call_count, 2)
 
@@ -151,7 +188,6 @@ class TestPushover(unittest.TestCase):
 
                 self.assertFalse(result)
                 self.assertEqual(SUT.client_error_timestamp, 0)
-                self.assertEqual(SUT.client_error_last_logged, 0)
                 self.assertEqual(SUT.server_error_timestamp, now)
                 self.assertEqual(mock_logger.logerr.call_count, 2)
 
