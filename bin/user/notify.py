@@ -323,27 +323,27 @@ class AbstractNotifier():
 
     def build_title(self, msg_data):
         """ Build a title based on threshold status."""
-        return f"Unexpected value for {msg_data.weewx_name}."
+        return f"Unexpected value for {msg_data.label} ({msg_data.weewx_name})."
 
     def build_message(self, msg_data):
         """ Build a message based on threshold status."""
         msg_template = {
             'equal': {
-                'outside': ("At {date_time} {name}{label} is no longer equal to threshold of {threshold_value}. "
+                'outside': ("At {date_time} {label} ({name}) is no longer equal to threshold of {threshold_value}. "
                             "Current value is {current_value}. {notifications_sent} sent.\n"),
-                'within': ("{name}{label} Not Equal at {date_time} is within threshold with value {current_value}, "
+                'within': ("{label} ({name}) Not Equal at {date_time} is within threshold with value {current_value}, "
                            "{notifications_sent} notifications sent.\n"),
             },
             'max': {
-                'outside': ("At {date_time} {name}{label} went above threshold of {threshold_value}. "
+                'outside': ("At {date_time} {label} ({name}) went above threshold of {threshold_value}. "
                             "Current value is {current_value}. {notifications_sent} sent.\n"),
-                'within': ("{name}{label} over Max threshold at {date_time} is within threshold with value {current_value}, "
+                'within': ("{label} ({name}) over Max threshold at {date_time} is within threshold with value {current_value}, "
                            "{notifications_sent} notifications sent.\n"),
             },
             'min': {
-                'outside': ("At {date_time} {name}{label} went below threshold of {threshold_value}. "
+                'outside': ("At {date_time} {label} ({name}) went below threshold of {threshold_value}. "
                             "Current value is {current_value}. {notifications_sent} sent.\n"),
-                'within': ("{name}{label} over Min threshold at {date_time} is within threshold with value {current_value}, "
+                'within': ("{label} ({name}) under Min threshold at {date_time} is within threshold with value {current_value}, "
                            "{notifications_sent} notifications sent.\n"),
             },
         }
