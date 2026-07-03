@@ -224,7 +224,7 @@ class Notify(StdService):
         now = time.time()
         tasks = []
         task_names = {}
-        self.notifier.initialize()
+        await self.notifier.initialize()
 
         for _obs, observation_detail in observations.items():
             observation = observation_detail['weewx_name']
