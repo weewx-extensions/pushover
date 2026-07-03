@@ -349,8 +349,8 @@ class AbstractNotifier():
         }
 
         msg_missing_template = {
-            'outside': "{name}{label} missing at {date_time}, {notifications_sent} notifications sent.\n",
-            'within': ("{name}{label} missing at {date_time} returned with value {current_value}, "
+            'outside': "{label} ({name}) missing at {date_time}, {notifications_sent} notifications sent.\n",
+            'within': ("{label} ({name}) missing at {date_time} returned with value {current_value}, "
                        "{notifications_sent} notification sent.\n"),
         }
 
