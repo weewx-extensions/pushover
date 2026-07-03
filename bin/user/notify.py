@@ -323,7 +323,7 @@ class AbstractNotifier():
 
     def build_title(self, msg_data):
         """ Build a title based on threshold status."""
-        return f"Unexpected value for {msg_data.label} ({msg_data.weewx_name})."
+        return f"{msg_data.label} {msg_data.threshold_type} is {msg_data.data_type}."
 
     def build_message(self, msg_data):
         """ Build a message based on threshold status."""
