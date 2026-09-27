@@ -195,7 +195,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within'):
                                 with mock.patch.object(Notify, 'check_outside'):
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -238,7 +238,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -287,7 +287,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -336,7 +336,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -385,7 +385,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -434,7 +434,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -483,7 +483,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -532,7 +532,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -581,7 +581,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -630,7 +630,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -684,7 +684,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -736,7 +736,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
@@ -783,7 +783,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
-                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.Mock):
+                                        with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
                                                 with mock.patch.object(MockClass, 'finalize', new_callable=mock.AsyncMock):
                                                     mock_time.time.return_value = now
