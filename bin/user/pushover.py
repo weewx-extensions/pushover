@@ -112,7 +112,8 @@ def format_timestamp(ts, format_str="%Y-%m-%d %H:%M:%S %Z"):
     ''' Format a timestamp for human consumption. '''
     return f"{time.strftime(format_str, time.localtime(ts))}"
 
-class Pushover(user.notify.AbstractNotifier):
+# The attributes are the notifier's configuration options, one per option.
+class Pushover(user.notify.AbstractNotifier):  # pylint: disable=too-many-instance-attributes
     """ Class to perform the pushover call."""
     def __init__(self, logger, notifier_dict):
         super().__init__(logger, notifier_dict)
@@ -138,7 +139,7 @@ class Pushover(user.notify.AbstractNotifier):
         now = int(time.time())
         if abs(now - self.client_error_timestamp) < self.client_error_log_frequency:
             self.logger.logdbg(self.name, (f"Fatal error occurred at {format_timestamp(self.client_error_timestamp)}, "
-                                            f"Notify skipped."))
+                                           f"Notify skipped."))
             return True
 
         if abs(now - self.server_error_timestamp) < self.server_error_wait_period:
@@ -184,9 +185,9 @@ class Pushover(user.notify.AbstractNotifier):
             return True
 
         self.logger.logerr(self.name, f"Received code '{response.code}' for {msg_data.weewx_name}")
-        if response.code >= 400 and response.code < 500:
+        if 400 <= response.code < 500:
             self.client_error_timestamp = now
-        if response.code >= 500 and response.code < 600:
+        if 500 <= response.code < 600:
             self.server_error_timestamp = now
         response_body = response.read().decode()
         try:

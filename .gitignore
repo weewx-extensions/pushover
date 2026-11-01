@@ -3,3 +3,5 @@ bin/user/tests/__pycache__/
 .coverage
 act-artifacts/
 *.pyc
+results/
+coverage.xml

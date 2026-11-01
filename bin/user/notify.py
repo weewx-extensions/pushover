@@ -83,34 +83,16 @@ class Notify(StdService):
         notifier_class = weeutil.weeutil.get_object(notifier_class_name)
         self.notifier = notifier_class(self.logger, notifier_dict)
 
-        count = to_int(service_dict.get('count', 10))
-        wait_time = to_int(service_dict.get('wait_time', 3600))
-        return_notification = to_bool(service_dict.get('return_notification', True))
+        defaults = {'count': to_int(service_dict.get('count', 10)),
+                    'wait_time': to_int(service_dict.get('wait_time', 3600)),
+                    'return_notification': to_bool(service_dict.get('return_notification', True))}
 
-        self.loop_observations = {}
-        if 'loop' in service_dict:
-            self.loop_first_check = True
-            default_loop_wait_time = to_int(service_dict['loop'].get('wait_time', wait_time))
-            default_loop_return_notification = to_bool(service_dict['loop'].get('return_notification', return_notification))
-            for observation in service_dict['loop']:
-                self.loop_observations[observation] = self.init_observations(service_dict['loop'][observation],
-                                                                             observation,
-                                                                             count,
-                                                                             default_loop_wait_time,
-                                                                             default_loop_return_notification)
+        self.loop_observations = self.section_observations(service_dict, 'loop', defaults)
+        self.loop_first_check = 'loop' in service_dict
         self.logger.loginf(self.name, f"loop observations: {self.loop_observations}")
 
-        self.archive_observations = {}
-        if 'archive' in service_dict:
-            self.archive_first_check = True
-            default_archive_wait_time = to_int(service_dict['archive'].get('wait_time', wait_time))
-            default_archive_return_notification = to_bool(service_dict['archive'].get('return_notification', return_notification))
-            for observation in service_dict['archive']:
-                self.archive_observations[observation] = self.init_observations(service_dict['archive'][observation],
-                                                                                observation,
-                                                                                count,
-                                                                                default_archive_wait_time,
-                                                                                default_archive_return_notification)
+        self.archive_observations = self.section_observations(service_dict, 'archive', defaults)
+        self.archive_first_check = 'archive' in service_dict
         self.logger.loginf(self.name, f"archive observations: {self.archive_observations}")
 
         if self.archive_observations:
@@ -141,6 +123,72 @@ class Notify(StdService):
 
         return observation
 
+    def section_observations(self, service_dict, section, defaults):
+        ''' Build the observations of the loop or archive section. '''
+        section_dict = service_dict.get(section, None)
+        if not section_dict:
+            return {}
+
+        wait_time = to_int(section_dict.get('wait_time', defaults['wait_time']))
+        return_notification = to_bool(section_dict.get('return_notification', defaults['return_notification']))
+        return {observation: self.init_observations(section_dict[observation],
+                                                    observation,
+                                                    defaults['count'],
+                                                    wait_time,
+                                                    return_notification)
+                for observation in section_dict}
+
+    @staticmethod
+    def within(detail_type, threshold, value):
+        ''' Whether the value has not crossed the detail type's threshold. '''
+        if detail_type == 'missing':
+            # An observation that is present can not be missing.
+            return True
+        if detail_type == 'min':
+            return value >= threshold
+        if detail_type == 'max':
+            return value <= threshold
+        return value == threshold
+
+    def check_detail(self, first_check, detail_type, observation_detail, value):
+        ''' Run the threshold check for one of an observation's detail types. '''
+        args = (detail_type,
+                observation_detail['weewx_name'],
+                observation_detail['label'],
+                observation_detail[detail_type],
+                value)
+        if self.within(detail_type, observation_detail[detail_type]['value'], value):
+            return self.check_within(*args)
+        return self.check_outside(first_check, *args)
+
+    def observation_results(self, first_check, observation_detail, data):
+        ''' Yield the (detail type, result) for an observation's configuration. '''
+        observation = observation_detail['weewx_name']
+        value = data.get(observation, None)
+
+        if observation not in data:
+            if not observation_detail.get('missing', None):
+                return
+            yield 'missing', self.check_outside(first_check,
+                                                'missing',
+                                                observation,
+                                                observation_detail['label'],
+                                                observation_detail['missing'],
+                                                None)
+            return
+
+        if value is None:
+            # A None value is not a missing observation, it is one that can not be checked.
+            return
+
+        self.logger.logdbg(self.name, f"Processing observation: {observation}{observation_detail['label']}")
+        for detail_type in ['missing', 'min', 'max', 'equal']:
+            if not observation_detail.get(detail_type, None):
+                continue
+            yield detail_type, self.check_detail(first_check, detail_type, observation_detail, value)
+
+    # The threshold context is passed as separate values so the log messages stay readable.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def check_outside(self, first_check, notification_type, name, label, observation_detail, value):
         ''' Check if an observation is less than a desired value.
             Send a notification if time and cound thresholds have been met. '''
@@ -227,67 +275,37 @@ class Notify(StdService):
         await self.notifier.initialize()
 
         for _obs, observation_detail in observations.items():
-            observation = observation_detail['weewx_name']
+            for detail_type, result in self.observation_results(first_check, observation_detail, data):
+                if not result:
+                    continue
 
-            if observation in data and data[observation] is not None:
-                self.logger.logdbg(self.name, f"Processing observation: {observation}{observation_detail['label']}")
-                detail_types = ['missing', 'min', 'max', 'equal']
-                for detail_type in detail_types:
-                    if observation_detail.get(detail_type, None):
-                        if (detail_type == 'missing') or \
-                           (detail_type == 'min' and data[observation] >= observation_detail[detail_type]['value']) or \
-                           (detail_type == 'max' and data[observation] <= observation_detail[detail_type]['value']) or \
-                           (detail_type == 'equal' and data[observation] == observation_detail[detail_type]['value']):
-                            result = self.check_within(detail_type,
-                                                       observation_detail['weewx_name'],
-                                                       observation_detail['label'],
-                                                       observation_detail[detail_type],
-                                                       data[observation])
-                        else:
-                            result = self.check_outside(first_check,
-                                                        detail_type,
-                                                        observation_detail['weewx_name'],
-                                                        observation_detail['label'],
-                                                        observation_detail[detail_type],
-                                                        data[observation])
-
-                        if result:
-                            task_name = f"{observation}-{detail_type}-{now}"
-                            # If missing has returned, do reset sent timestamp
-                            if detail_type != 'missing':
-                                task_names[task_name] = observation_detail[detail_type]
-                            self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
-                            tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
-
-            detail_type = 'missing'
-            if observation not in data and observation_detail.get(detail_type, None):
-                result = self.check_outside(first_check,
-                                            detail_type,
-                                            observation_detail['weewx_name'],
-                                            observation_detail['label'],
-                                            observation_detail['missing'],
-                                            None)
-                if result:
-                    task_name = f"{observation}-{detail_type}-{now}"
+                task_name = f"{observation_detail['weewx_name']}-{detail_type}-{now}"
+                # A missing observation has no threshold to record against.
+                if detail_type != 'missing':
                     task_names[task_name] = observation_detail[detail_type]
-                    self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
-                    tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
+                self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
+                tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
 
-        if tasks:
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=self.notifier.timeout)
-            for task in done:
-                result = task.result()
-                task_name = task.get_name()
-                self.logger.logdbg(self.name, f"Task, {task_name}, completed with result, {result}.")
-                if task_name in task_names and result:
-                    task_names[task_name]['last_sent_timestamp'] = now
-
-            for task in pending:
-                task_name = task.get_name()
-                cancelled = task.cancel()
-                self.logger.logerr(self.name, f"Task, {task_name}, cancellation attempt with result {cancelled}.")
-
+        await self.complete_tasks(tasks, task_names, now)
         await self.notifier.finalize()
+
+    async def complete_tasks(self, tasks, task_names, now):
+        """ Wait for the notification tasks, recording the ones that were sent. """
+        if not tasks:
+            return
+
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=self.notifier.timeout)
+        for task in done:
+            result = task.result()
+            task_name = task.get_name()
+            self.logger.logdbg(self.name, f"Task, {task_name}, completed with result, {result}.")
+            if task_name in task_names and result:
+                task_names[task_name]['last_sent_timestamp'] = now
+
+        for task in pending:
+            task_name = task.get_name()
+            cancelled = task.cancel()
+            self.logger.logerr(self.name, f"Task, {task_name}, cancellation attempt with result {cancelled}.")
 
     def new_archive_record(self, event):
         """ Handle the new archive record event. """
