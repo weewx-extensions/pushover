@@ -280,8 +280,10 @@ class Notify(StdService):
                     continue
 
                 task_name = f"{observation_detail['weewx_name']}-{detail_type}-{now}"
-                # A missing observation has no threshold to record against.
-                if detail_type != 'missing':
+                # A 'missing' observation that has returned ('within') must not
+                # reset the sent timestamp; a 'missing' observation that is
+                # still missing ('outside') must, so wait_time throttles it.
+                if detail_type != 'missing' or getattr(result, 'type', None) == 'outside':
                     task_names[task_name] = observation_detail[detail_type]
                 self.logger.logdbg(self.name, f"Task, {task_name}, with {result}, has been submitted and recorded.")
                 tasks.append(asyncio.create_task(self.notifier.send_notification(result), name=task_name))
