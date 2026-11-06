@@ -680,7 +680,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                 with mock.patch('asyncio.wait') as mock_wait:
                     with mock.patch('user.notify.Logger', spec=Logger):
                         with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
-                            with mock.patch.object(Notify, 'check_within') as mock_check_within:
+                            with mock.patch.object(Notify, 'check_within'):
                                 with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
                                         with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
@@ -730,7 +730,7 @@ class TestAsyncNotify(unittest.IsolatedAsyncioTestCase):
                     with mock.patch('user.notify.Logger', spec=Logger):
                         with mock.patch('user.notify.weeutil.weeutil') as mock_weeutil:
                             with mock.patch.object(Notify, 'check_within') as mock_check_within:
-                                with mock.patch.object(Notify, 'check_outside') as mock_check_outside:
+                                with mock.patch.object(Notify, 'check_outside'):
                                     with mock.patch.object(MockClass, 'timeout', new_callable=mock.Mock):
                                         with mock.patch.object(MockClass, 'initialize', new_callable=mock.AsyncMock):
                                             with mock.patch.object(MockClass, 'send_notification', new_callable=mock.Mock):
