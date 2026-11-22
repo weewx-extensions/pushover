@@ -1,8 +1,5 @@
-V0.1.0
-- Initial Release
-
-V0.2.0
-- First release in new repository location
+V0.4.0
+- General cleanup
 
 V0.3.0
 Breaking Changes:
@@ -12,5 +9,8 @@ Breaking Changes:
 Enhancements:
 - Major rewrite to enable the use of different notification providers.
 
-V0.4.0
-- General cleanup
+V0.2.0
+- First release in new repository location
+
+V0.1.0
+- Initial Release
