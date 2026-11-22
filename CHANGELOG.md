@@ -1,16 +1,24 @@
-V0.4.0
+# Changelog
+
+## [0.4.0]
+
 - General cleanup
 
-V0.3.0
-Breaking Changes:
+## [0.3.0]
+
+### Breaking Changes
+
 - Configuration data specific to the Pushover service has moved to its own section, [[Pushover]].
 - The top level section has been renamed from [Pushover] to [Notify].
 
-Enhancements:
+### Enhancements
+
 - Major rewrite to enable the use of different notification providers.
 
-V0.2.0
+## [0.2.0]
+
 - First release in new repository location
 
-V0.1.0
+## [0.1.0]
+
 - Initial Release
