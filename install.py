@@ -11,7 +11,7 @@ import configobj
 
 from weecfg.extension import ExtensionInstaller
 
-VERSION = '0.4.0'
+VERSION = '0.5.0-rc01'
 
 EXTENSION_CONFIG = """
 [Notify]

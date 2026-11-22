@@ -34,7 +34,7 @@ from weewx.engine import StdService
 import weeutil
 from weeutil.weeutil import to_bool, to_int
 
-VERSION = '0.4.0'
+VERSION = '0.5.0-rc01'
 
 def format_timestamp(ts, format_str="%Y-%m-%d %H:%M:%S %Z"):
     ''' Format a timestamp for human consumption. '''
